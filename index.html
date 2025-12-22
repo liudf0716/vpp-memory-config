@@ -634,6 +634,10 @@
                         </div>
                     </div>
                 </div>
+                <h3 style="color: #667eea; margin: 20px 0 10px; text-align: center;">监控与诊断</h3>
+                <div class="code-block" style="width: 50%; margin: 10px auto; text-align: center;">
+                    vppctl show stats-segment
+                </div>
             </div>
             <div class="slide-number">7</div>
         </div>
@@ -749,6 +753,7 @@
                         <div class="code-block">
                             vppctl show api ring-stats
                             vppctl show api clients
+                            vppctl show memory api-segment
                         </div>
                     </div>
                 </div>
@@ -978,8 +983,8 @@
                             <td>used / total > 90%</td>
                         </tr>
                         <tr>
-                            <td><strong>API 慢</strong></td>
-                            <td><code>show api ring-stats</code></td>
+                            <td><strong>API 诊断</strong></td>
+                            <td><code>show memory api-segment</code> 或 <code>show api ring-stats</code></td>
                             <td>ring misses > 10%</td>
                         </tr>
                         <tr>
