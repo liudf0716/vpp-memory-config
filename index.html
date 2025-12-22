@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -99,7 +100,7 @@
             font-size: 0.9em;
             margin: 20px 0;
             overflow-x: auto;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
 
         .code-comment {
@@ -168,7 +169,7 @@
             background: white;
             padding: 25px;
             border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             border-top: 4px solid #667eea;
         }
 
@@ -248,7 +249,7 @@
             padding: 15px;
             margin: 10px 0;
             text-align: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
         .memory-block-title {
@@ -284,7 +285,7 @@
             background: white;
             padding: 30px;
             border-radius: 12px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
             margin: 20px;
         }
 
@@ -313,7 +314,7 @@
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0,0,0,0.7);
+            background: rgba(0, 0, 0, 0.7);
             color: white;
             padding: 10px 25px;
             border-radius: 20px;
@@ -326,13 +327,14 @@
                 opacity: 0;
                 transform: translateY(30px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
 
-        .slide.active .slide-content > * {
+        .slide.active .slide-content>* {
             animation: fadeInUp 0.6s ease-out;
         }
 
@@ -352,9 +354,10 @@
         }
     </style>
 </head>
+
 <body>
     <div class="progress-bar" id="progressBar"></div>
-    
+
     <div class="presentation" id="presentation">
         <!-- Slide 1: Title -->
         <div class="slide active">
@@ -367,7 +370,7 @@
                 </p>
                 <div style="margin-top: 60px;">
                     <p style="font-size: 1.5em; color: #666;">技术分享</p>
-                    <p style="font-size: 1.2em; color: #999; margin-top: 10px;">2024-12-12</p>
+                    <p style="font-size: 1.2em; color: #999; margin-top: 10px;">2025-12-22</p>
                 </div>
             </div>
             <div class="slide-number">1</div>
@@ -416,17 +419,17 @@
             </div>
             <div class="slide-content">
                 <div class="architecture-diagram">
-                    <div class="memory-block">
-                        <div class="memory-block-title">🏠 Main Heap (heapsize)</div>
-                        <div>主线程 + Worker 线程内存</div>
-                        <div>数据包处理、路由表、ARP 表</div>
-                        <div class="memory-block-size">默认：1G</div>
-                    </div>
                     <div class="memory-block" style="border-color: #dc3545;">
-                        <div class="memory-block-title" style="color: #dc3545;">⚠️ Stats Segment (statseg)</div>
+                        <div class="memory-block-title" style="color: #dc3545;">🔥 Main Heap (heapsize)</div>
+                        <div>主线程 + Worker 线程内存</div>
+                        <div>路由表、IPsec 隧道、虚拟接口</div>
+                        <div class="memory-block-size" style="color: #dc3545;">⚠️ 重压力下最易 OOM！建议 2G-3G+</div>
+                    </div>
+                    <div class="memory-block">
+                        <div class="memory-block-title">📊 Stats Segment (statseg)</div>
                         <div>接口统计计数器</div>
-                        <div style="color: #dc3545; font-weight: 600;">⚠️ 最常见 OOM 原因！</div>
-                        <div class="memory-block-size" style="color: #dc3545;">默认：32M（太小！）</div>
+                        <div>1w 接口约需 64M</div>
+                        <div class="memory-block-size">默认：32M（正常够用）</div>
                     </div>
                     <div class="memory-block">
                         <div class="memory-block-title">📡 API Segment (api-segment)</div>
@@ -464,15 +467,15 @@
                             <td><strong>Main Heap</strong></td>
                             <td><code>heapsize</code></td>
                             <td>1G</td>
-                            <td>数据包处理、路由表</td>
-                            <td style="color: #28a745;">✅ 低</td>
+                            <td>路由、隧道、接口</td>
+                            <td style="color: #dc3545; font-weight: 700;">🔥 高 (重压易 OOM)</td>
                         </tr>
-                        <tr style="background: #fff3cd;">
+                        <tr>
                             <td><strong>Stats Segment</strong></td>
                             <td><code>statseg { size }</code></td>
                             <td>32M</td>
                             <td>接口统计</td>
-                            <td style="color: #dc3545; font-weight: 700;">⚠️ 高</td>
+                            <td style="color: #28a745;">✅ 低 (正常够用)</td>
                         </tr>
                         <tr>
                             <td><strong>API Segment</strong></td>
@@ -490,8 +493,8 @@
                         </tr>
                     </tbody>
                 </table>
-                <div class="warning-box" style="margin-top: 30px;">
-                    <strong>⚠️ 重点记忆：</strong> Stats Segment 是最常见的 OOM 原因！默认 32M 在大规模部署中严重不足。
+                <div class="error-box" style="margin-top: 30px;">
+                    <strong>🔥 重点记忆：</strong> Main Heap 是大压力场景下的 OOM 重区！
                 </div>
             </div>
             <div class="slide-number">4</div>
@@ -507,11 +510,11 @@
                     <div>
                         <h3 style="color: #667eea; margin-bottom: 20px;">配置示例</h3>
                         <div class="code-block">
-<span class="code-comment"># startup.conf</span>
-<span class="code-keyword">heapsize</span> <span class="code-number">3G</span>
+                            <span class="code-comment"># startup.conf</span>
+                            <span class="code-keyword">heapsize</span> <span class="code-number">3G</span>
 
-<span class="code-comment"># 或更详细</span>
-<span class="code-keyword">heapsize</span> <span class="code-number">3072M</span>
+                            <span class="code-comment"># 或更详细</span>
+                            <span class="code-keyword">heapsize</span> <span class="code-number">3072M</span>
                         </div>
                         <h3 style="color: #667eea; margin: 30px 0 20px;">用途</h3>
                         <ul>
@@ -525,19 +528,19 @@
                     <div>
                         <h3 style="color: #667eea; margin-bottom: 20px;">大小计算公式</h3>
                         <div class="formula">
-Main Heap = 基础开销 + 数据包缓冲<br>
-+ 路由表 + 连接状态 + 插件需求
+                            Main Heap = 基础开销 + 数据包缓冲<br>
+                            + 路由表 + 连接状态 + 插件需求
                         </div>
                         <h3 style="color: #667eea; margin: 30px 0 20px;">推荐配置</h3>
                         <div class="success-box">
-                            <strong>轻量级路由器：</strong> 1-2G<br>
-                            <strong>中等规模：</strong> 2-4G<br>
-                            <strong>大规模/高吞吐：</strong> 4-8G 或更高
+                            <strong>轻量级(接口<1k)：< /strong> 1-2G<br>
+                                    <strong>中大规模(接口/IPsec隧道 > 1w)：</strong> 2-3G<br>
+                                    <strong>超大规模/高吞吐：</strong> 4-8G 或更高
                         </div>
                         <h3 style="color: #667eea; margin: 30px 0 20px;">监控命令</h3>
                         <div class="code-block">
-vppctl show memory main-heap
-vppctl show threads
+                            vppctl show memory main-heap
+                            vppctl show threads
                         </div>
                     </div>
                 </div>
@@ -545,16 +548,16 @@ vppctl show threads
             <div class="slide-number">5</div>
         </div>
 
-        <!-- Slide 6: Stats Segment - 为什么最容易 OOM -->
+        <!-- Slide 6: Main Heap - 为什么在高压下最易 OOM -->
         <div class="slide">
             <div class="slide-header">
-                <h2 class="slide-title">⚠️ Stats Segment：最容易 OOM 的内存段</h2>
+                <h2 class="slide-title">🔥 Main Heap：大压力下的 OOM 重灾区</h2>
             </div>
             <div class="slide-content">
                 <div class="error-box" style="margin-bottom: 30px;">
-                    <h3 style="margin-bottom: 15px;">🔥 核心问题：默认值太小</h3>
-                    <div class="big-number">32MB</div>
-                    <p style="text-align: center; font-size: 1.2em;">默认配置在大规模部署中严重不足！</p>
+                    <h3 style="margin-bottom: 15px;">� 性能瓶颈：默认 1G 配置过低</h3>
+                    <div class="big-number">> 10,000</div>
+                    <p style="text-align: center; font-size: 1.2em;">当 IPsec 隧道或虚拟接口超过 1w 时，1G 内存将立即耗尽！</p>
                 </div>
                 <table>
                     <thead>
@@ -568,17 +571,17 @@ vppctl show threads
                         <tr>
                             <td>100</td>
                             <td>~21M</td>
-                            <td style="color: #28a745; font-weight: 600;">✅ 够用</td>
+                            <td style="color: #28a745; font-weight: 600;">✅ 够用 (32M 默认OK)</td>
                         </tr>
                         <tr style="background: #fff3cd;">
-                            <td>500</td>
-                            <td>~105M</td>
-                            <td style="color: #dc3545; font-weight: 700;">❌ 不够（OOM）</td>
+                            <td>10,000</td>
+                            <td>~60M</td>
+                            <td style="color: #dc3545; font-weight: 700;">❌ 不够 (需 64M)</td>
                         </tr>
                         <tr style="background: #f8d7da;">
-                            <td>1000</td>
-                            <td>~210M</td>
-                            <td style="color: #dc3545; font-weight: 700;">❌ 严重不足</td>
+                            <td>20,000</td>
+                            <td>~120M</td>
+                            <td style="color: #dc3545; font-weight: 700;">❌ 严重不足 (需 128M+)</td>
                         </tr>
                         <tr style="background: #f8d7da;">
                             <td>4000</td>
@@ -598,35 +601,36 @@ vppctl show threads
             </div>
             <div class="slide-content">
                 <div class="formula" style="font-size: 1.3em; margin-bottom: 40px;">
-每个接口需求 = 144 字节 × 1.5（扩展预留）= 216 字节
+                    每个接口需求 = 144 字节 × 1.5（扩展预留）= 216 字节
                 </div>
                 <div class="formula" style="font-size: 1.5em; margin-bottom: 40px;">
-Stats Segment = 基础开销 + (接口数 × 216 字节 × 2)
+                    Stats Segment = 基础开销 + (接口数 × 216 字节 × 2)
                 </div>
                 <h3 style="color: #667eea; margin: 30px 0 20px; text-align: center;">推荐配置</h3>
                 <div class="three-columns">
                     <div class="card">
-                        <h3>< 100 接口</h3>
-                        <div class="code-block">
-statseg {
-  size <span class="code-number">64M</span>
-}
-                        </div>
+                        <h3>
+                            < 10,000 接口</h3>
+                                <div class="code-block">
+                                    statseg {
+                                    size <span class="code-number">64M</span>
+                                    }
+                                </div>
                     </div>
                     <div class="card" style="border-top-color: #28a745;">
-                        <h3>100-1000 接口</h3>
+                        <h3>1000-10000 接口</h3>
                         <div class="code-block">
-statseg {
-  size <span class="code-number">256M</span>
-}
+                            statseg {
+                            size <span class="code-number">256M</span>
+                            }
                         </div>
                     </div>
                     <div class="card" style="border-top-color: #ffc107;">
-                        <h3>1000-5000 接口 ⭐</h3>
+                        <h3>10000-200000 接口 ⭐</h3>
                         <div class="code-block">
-statseg {
-  size <span class="code-number">512M</span>
-}
+                            statseg {
+                            size <span class="code-number">512M</span>
+                            }
                         </div>
                     </div>
                 </div>
@@ -654,10 +658,10 @@ statseg {
                         </div>
                         <h3 style="color: #dc3545; margin: 30px 0 20px;">错误日志</h3>
                         <div class="code-block">
-svm_region_find_or_create:956:
-region /stats_vm: not enough VM
-to allocate 0x12F4000 (19908304)
-os_out_of_memory()
+                            svm_region_find_or_create:956:
+                            region /stats_vm: not enough VM
+                            to allocate 0x12F4000 (19908304)
+                            os_out_of_memory()
                         </div>
                     </div>
                     <div>
@@ -679,11 +683,12 @@ os_out_of_memory()
                         <h3 style="color: #28a745; margin: 30px 0 20px;">✅ 解决方案</h3>
                         <div class="success-box">
                             <div class="code-block">
-<span class="code-keyword">heapsize</span> <span class="code-number">3G</span>
+                                <span class="code-keyword">heapsize</span> <span class="code-number">3G</span>
 
-<span class="code-keyword">statseg</span> {
-    <span class="code-keyword">size</span> <span class="code-number">512M</span>  <span class="code-comment"># ← 关键修改</span>
-}
+                                <span class="code-keyword">statseg</span> {
+                                <span class="code-keyword">size</span> <span class="code-number">512M</span> <span
+                                    class="code-comment"># ← 关键修改</span>
+                                }
                             </div>
                             <p style="margin-top: 15px;"><strong>效果：</strong>OOM 解决，可创建 10,000+ 接口</p>
                         </div>
@@ -704,17 +709,17 @@ os_out_of_memory()
                         <h3 style="color: #667eea; margin-bottom: 20px;">参数关系</h3>
                         <div class="highlight-box">
                             <div style="font-family: monospace; font-size: 1.1em;">
-┌─ global_vm (global-size: 256M) ─┐<br>
-│  ┌─ API Segment (128M) ─┐       │<br>
-│  └────────────────────────┘       │<br>
-│  ┌─ Private Heap (64M) ──┐       │<br>
-│  └────────────────────────┘       │<br>
-│  其他开销...                       │<br>
-└───────────────────────────────────┘
+                                ┌─ global_vm (global-size: 256M) ─┐<br>
+                                │ ┌─ API Segment (128M) ─┐ │<br>
+                                │ └────────────────────────┘ │<br>
+                                │ ┌─ Private Heap (64M) ──┐ │<br>
+                                │ └────────────────────────┘ │<br>
+                                │ 其他开销... │<br>
+                                └───────────────────────────────────┘
                             </div>
                         </div>
                         <div class="formula" style="margin-top: 30px;">
-global-size ≥ api-size + api-pvt-heap-size + 开销
+                            global-size ≥ api-size + api-pvt-heap-size + 开销
                         </div>
                         <div class="warning-box" style="margin-top: 20px;">
                             <strong>⚠️ 常见错误：</strong><br>
@@ -742,8 +747,8 @@ global-size ≥ api-size + api-pvt-heap-size + 开销
                         </div>
                         <h3 style="color: #667eea; margin: 30px 0 20px;">监控命令</h3>
                         <div class="code-block">
-vppctl show api ring-stats
-vppctl show api clients
+                            vppctl show api ring-stats
+                            vppctl show api clients
                         </div>
                     </div>
                 </div>
@@ -762,36 +767,36 @@ vppctl show api clients
                         <h3 style="color: #667eea; margin-bottom: 20px;">NUMA 架构示意图</h3>
                         <div class="architecture-diagram">
                             <div style="font-family: monospace; font-size: 1.1em; line-height: 1.8;">
-┌──────── 双 NUMA 节点服务器 ────────┐<br>
-│  NUMA Node 0      NUMA Node 1    │<br>
-│  ┌──────────┐    ┌──────────┐   │<br>
-│  │ CPU 0-7  │    │ CPU 8-15 │   │<br>
-│  └──────────┘    └──────────┘   │<br>
-│  ┌──────────┐    ┌──────────┐   │<br>
-│  │ Memory A │    │ Memory B │   │<br>
-│  │ 64GB     │    │ 64GB     │   │<br>
-│  └──────────┘    └──────────┘   │<br>
-│       ↑               ↑          │<br>
-│  本地访问快      本地访问快       │<br>
-│  远程访问慢      远程访问慢       │<br>
-└────────────────────────────────┘
+                                ┌──────── 双 NUMA 节点服务器 ────────┐<br>
+                                │ NUMA Node 0 NUMA Node 1 │<br>
+                                │ ┌──────────┐ ┌──────────┐ │<br>
+                                │ │ CPU 0-7 │ │ CPU 8-15 │ │<br>
+                                │ └──────────┘ └──────────┘ │<br>
+                                │ ┌──────────┐ ┌──────────┐ │<br>
+                                │ │ Memory A │ │ Memory B │ │<br>
+                                │ │ 64GB │ │ 64GB │ │<br>
+                                │ └──────────┘ └──────────┘ │<br>
+                                │ ↑ ↑ │<br>
+                                │ 本地访问快 本地访问快 │<br>
+                                │ 远程访问慢 远程访问慢 │<br>
+                                └────────────────────────────────┘
                             </div>
                         </div>
                     </div>
                     <div>
                         <h3 style="color: #667eea; margin-bottom: 20px;">优化配置</h3>
                         <div class="code-block">
-<span class="code-comment"># CPU 配置</span>
-<span class="code-keyword">cpu</span> {
-    <span class="code-keyword">main-core</span> <span class="code-number">0</span>
-    <span class="code-keyword">corelist-workers</span> <span class="code-number">1-15</span>
-    <span class="code-comment"># 只用同一 NUMA 节点</span>
-}
+                            <span class="code-comment"># CPU 配置</span>
+                            <span class="code-keyword">cpu</span> {
+                            <span class="code-keyword">main-core</span> <span class="code-number">0</span>
+                            <span class="code-keyword">corelist-workers</span> <span class="code-number">1-15</span>
+                            <span class="code-comment"># 只用同一 NUMA 节点</span>
+                            }
 
-<span class="code-comment"># 启用大页</span>
-<span class="code-keyword">physmem</span> {
-    <span class="code-keyword">main-heap-page-size</span> <span class="code-number">2M</span>
-}
+                            <span class="code-comment"># 启用大页</span>
+                            <span class="code-keyword">physmem</span> {
+                            <span class="code-keyword">main-heap-page-size</span> <span class="code-number">2M</span>
+                            }
                         </div>
                         <h3 style="color: #667eea; margin: 30px 0 20px;">为什么使用大页？</h3>
                         <div class="success-box">
@@ -820,58 +825,61 @@ vppctl show api clients
                 <div class="three-columns">
                     <div class="card">
                         <h3>小型部署</h3>
-                        <p style="color: #666; margin-bottom: 15px;">< 100 接口，< 10K 路由</p>
-                        <div class="code-block" style="font-size: 0.8em;">
-<span class="code-keyword">heapsize</span> <span class="code-number">1G</span>
+                        <p style="color: #666; margin-bottom: 15px;">
+                            < 100 接口，< 10K 路由</p>
+                                <div class="code-block" style="font-size: 0.8em;">
+                                    <span class="code-keyword">heapsize</span> <span class="code-number">2G</span> <span
+                                        class="code-comment"># 默认 1G 较小，建议 2G+</span>
 
-<span class="code-keyword">statseg</span> {
-    <span class="code-keyword">size</span> <span class="code-number">128M</span>
-}
+                                    <span class="code-keyword">statseg</span> {
+                                    <span class="code-keyword">size</span> <span class="code-number">128M</span>
+                                    }
 
-<span class="code-keyword">cpu</span> {
-    <span class="code-keyword">main-core</span> <span class="code-number">0</span>
-    <span class="code-keyword">corelist-workers</span> <span class="code-number">1-3</span>
-}
-                        </div>
+                                    <span class="code-keyword">cpu</span> {
+                                    <span class="code-keyword">main-core</span> <span class="code-number">0</span>
+                                    <span class="code-keyword">corelist-workers</span> <span
+                                        class="code-number">1-3</span>
+                                    }
+                                </div>
                     </div>
                     <div class="card" style="border-top-color: #28a745;">
                         <h3>中型部署 ⭐</h3>
                         <p style="color: #666; margin-bottom: 15px;">100-1000 接口，10K-100K 路由</p>
                         <div class="code-block" style="font-size: 0.8em;">
-<span class="code-keyword">heapsize</span> <span class="code-number">3G</span>
+                            <span class="code-keyword">heapsize</span> <span class="code-number">3G</span>
 
-<span class="code-keyword">statseg</span> {
-    <span class="code-keyword">size</span> <span class="code-number">512M</span>
-}
+                            <span class="code-keyword">statseg</span> {
+                            <span class="code-keyword">size</span> <span class="code-number">512M</span>
+                            }
 
-<span class="code-keyword">cpu</span> {
-    <span class="code-keyword">main-core</span> <span class="code-number">0</span>
-    <span class="code-keyword">corelist-workers</span> <span class="code-number">1-7</span>
-}
+                            <span class="code-keyword">cpu</span> {
+                            <span class="code-keyword">main-core</span> <span class="code-number">0</span>
+                            <span class="code-keyword">corelist-workers</span> <span class="code-number">1-7</span>
+                            }
 
-<span class="code-keyword">physmem</span> {
-    <span class="code-keyword">main-heap-page-size</span> <span class="code-number">2M</span>
-}
+                            <span class="code-keyword">physmem</span> {
+                            <span class="code-keyword">main-heap-page-size</span> <span class="code-number">2M</span>
+                            }
                         </div>
                     </div>
                     <div class="card" style="border-top-color: #ffc107;">
                         <h3>大型部署</h3>
                         <p style="color: #666; margin-bottom: 15px;">> 1000 接口，> 100K 路由</p>
                         <div class="code-block" style="font-size: 0.8em;">
-<span class="code-keyword">heapsize</span> <span class="code-number">8G</span>
+                            <span class="code-keyword">heapsize</span> <span class="code-number">8G</span>
 
-<span class="code-keyword">statseg</span> {
-    <span class="code-keyword">size</span> <span class="code-number">1G</span>
-}
+                            <span class="code-keyword">statseg</span> {
+                            <span class="code-keyword">size</span> <span class="code-number">1G</span>
+                            }
 
-<span class="code-keyword">api-segment</span> {
-    <span class="code-keyword">global-size</span> <span class="code-number">512M</span>
-}
+                            <span class="code-keyword">api-segment</span> {
+                            <span class="code-keyword">global-size</span> <span class="code-number">512M</span>
+                            }
 
-<span class="code-keyword">cpu</span> {
-    <span class="code-keyword">main-core</span> <span class="code-number">0</span>
-    <span class="code-keyword">corelist-workers</span> <span class="code-number">1-15</span>
-}
+                            <span class="code-keyword">cpu</span> {
+                            <span class="code-keyword">main-core</span> <span class="code-number">0</span>
+                            <span class="code-keyword">corelist-workers</span> <span class="code-number">1-15</span>
+                            }
                         </div>
                     </div>
                 </div>
@@ -885,7 +893,8 @@ vppctl show api clients
                 <h2 class="slide-title">性能优化优先级</h2>
             </div>
             <div class="slide-content">
-                <div class="highlight-box" style="background: linear-gradient(135deg, #dc354515 0%, #dc354515 100%); border-left-color: #dc3545;">
+                <div class="highlight-box"
+                    style="background: linear-gradient(135deg, #dc354515 0%, #dc354515 100%); border-left-color: #dc3545;">
                     <h3 style="color: #dc3545; margin-bottom: 20px;">⭐⭐⭐ 高优先级（必须做）</h3>
                     <ul style="font-size: 1.2em;">
                         <li><strong>Stats Segment</strong> 根据接口数量调整</li>
@@ -893,7 +902,8 @@ vppctl show api clients
                         <li><strong>启用 Huge Pages</strong></li>
                     </ul>
                 </div>
-                <div class="highlight-box" style="background: linear-gradient(135deg, #ffc10715 0%, #ffc10715 100%); border-left-color: #ffc107; margin-top: 30px;">
+                <div class="highlight-box"
+                    style="background: linear-gradient(135deg, #ffc10715 0%, #ffc10715 100%); border-left-color: #ffc107; margin-top: 30px;">
                     <h3 style="color: #ffc107; margin-bottom: 20px;">⭐⭐ 中优先级（推荐做）</h3>
                     <ul style="font-size: 1.2em;">
                         <li><strong>NUMA 亲和性</strong>配置</li>
@@ -919,23 +929,23 @@ vppctl show api clients
             <div class="slide-content">
                 <div class="architecture-diagram">
                     <div style="font-family: monospace; font-size: 1.15em; line-height: 2;">
-<strong style="color: #dc3545;">VPP OOM 崩溃</strong><br>
-    │<br>
-    ├─→ <strong>1. 检查日志，找到错误信息</strong><br>
-    │   • "region /global_vm" → API Segment 问题<br>
-    │   • "stats_vm" → Stats Segment 问题<br>
-    │   • 其他 → Main Heap 问题<br>
-    │<br>
-    ├─→ <strong>2. 查看当前内存使用</strong><br>
-    │   vppctl show memory [segment]<br>
-    │<br>
-    ├─→ <strong>3. 计算实际需求</strong><br>
-    │   • 接口数量 × 216 字节 (stats)<br>
-    │   • 路由数量 × 256 字节 (main)<br>
-    │   • API 调用频率 (api)<br>
-    │<br>
-    └─→ <strong>4. 调整配置并重启</strong><br>
-        修改 startup.conf → 重启 VPP
+                        <strong style="color: #dc3545;">VPP OOM 崩溃</strong><br>
+                        │<br>
+                        ├─→ <strong>1. 检查日志，找到错误信息</strong><br>
+                        │ • "region /global_vm" → API Segment 问题<br>
+                        │ • "stats_vm" → Stats Segment 问题<br>
+                        │ • 其他 → Main Heap 问题<br>
+                        │<br>
+                        ├─→ <strong>2. 查看当前内存使用</strong><br>
+                        │ vppctl show memory [segment]<br>
+                        │<br>
+                        ├─→ <strong>3. 计算实际需求</strong><br>
+                        │ • 接口数量 × 216 字节 (stats)<br>
+                        │ • 路由数量 × 256 字节 (main)<br>
+                        │ • API 调用频率 (api)<br>
+                        │<br>
+                        └─→ <strong>4. 调整配置并重启</strong><br>
+                        修改 startup.conf → 重启 VPP
                     </div>
                 </div>
             </div>
@@ -1002,19 +1012,25 @@ vppctl show api clients
                 <div class="two-columns">
                     <div>
                         <div class="error-box">
-                            <h3 style="margin-bottom: 15px;">🔥 最重要：Stats Segment</h3>
+                            <h3 style="margin-bottom: 15px;">🔥 最易 OOM：Main Heap</h3>
                             <ul style="font-size: 1.1em;">
-                                <li>默认 32M 太小</li>
-                                <li>最常见的 OOM 原因</li>
-                                <li>建议至少 256M</li>
-                                <li>大规模部署用 512M-1G</li>
+                                <li>压力大时最容易崩溃</li>
+                                <li>隧道/接口 > 1w 需 2G-3G</li>
+                                <li>建议根据业务规模大幅预留</li>
+                            </ul>
+                        </div>
+                        <div class="highlight-box" style="margin-top: 30px;">
+                            <h3 style="margin-bottom: 15px;">📊 Stats Segment 适度调整</h3>
+                            <ul style="font-size: 1.1em;">
+                                <li>默认 32M 正常够用</li>
+                                <li>1w 接口时需上调到 64M</li>
                             </ul>
                         </div>
                         <div class="success-box" style="margin-top: 30px;">
                             <h3 style="margin-bottom: 15px;">✅ Main Heap 根据场景调整</h3>
                             <ul style="font-size: 1.1em;">
-                                <li>小型：1-2G</li>
-                                <li>中型：2-4G</li>
+                                <li>小型(<1k)：1-2G< /li>
+                                <li>中型(>1w IPsec/接口)：2-3G</li>
                                 <li>大型：4-8G</li>
                             </ul>
                         </div>
@@ -1053,7 +1069,8 @@ vppctl show api clients
                 </div>
                 <div style="display: flex; align-items: center; justify-content: center; gap: 60px; margin: 40px 0;">
                     <div class="qr-container">
-                        <img src="qq-group.jpg" alt="QQ 群二维码" style="max-width: 450px; max-height: 500px; width: auto; height: auto; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                        <img src="qq-group.jpg" alt="QQ 群二维码"
+                            style="max-width: 450px; max-height: 500px; width: auto; height: auto; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
                     </div>
                     <div style="text-align: left; font-size: 1.4em; color: #666; max-width: 500px;">
                         <p style="margin-bottom: 25px;">💬 <strong>扫码加群</strong>，与专家和同行交流</p>
@@ -1064,7 +1081,7 @@ vppctl show api clients
                     </div>
                 </div>
                 <div style="margin-top: 40px; font-size: 1em; color: #999;">
-                    <p>© 2024 VPP 技术分享 | 保留所有权利</p>
+                    <p>© 2025 VPP 技术分享 | 保留所有权利</p>
                 </div>
             </div>
             <div class="slide-number">16</div>
@@ -1127,7 +1144,7 @@ vppctl show api clients
         document.addEventListener('click', (e) => {
             const clickX = e.clientX;
             const windowWidth = window.innerWidth;
-            
+
             if (clickX < windowWidth * 0.3) {
                 prevSlide();
             } else if (clickX > windowWidth * 0.7) {
@@ -1144,7 +1161,7 @@ vppctl show api clients
         document.addEventListener('touchend', (e) => {
             const touchEndX = e.changedTouches[0].clientX;
             const diff = touchStartX - touchEndX;
-            
+
             if (Math.abs(diff) > 50) {
                 if (diff > 0) {
                     nextSlide();
@@ -1167,4 +1184,5 @@ vppctl show api clients
         });
     </script>
 </body>
+
 </html>
