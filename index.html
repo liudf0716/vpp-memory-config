@@ -861,62 +861,53 @@ free: 2.49G, trimmable: 1.97G
                 <div class="three-columns">
                     <div class="card">
                         <h3>小型部署</h3>
-                        <p style="color: #666; margin-bottom: 15px;">
-                            < 100 接口，< 10K 路由</p>
-                                <div class="code-block" style="font-size: 0.8em;">
-                                    <span class="code-keyword">heapsize</span> <span class="code-number">2G</span> <span
-                                        class="code-comment"># 默认 1G 较小，建议 2G+</span>
+                        <p style="color: #666; margin-bottom: 15px;">&lt; 100 接口，&lt; 10K 路由</p>
+                        <div class="code-block" style="font-size: 0.8em;"><span class="code-keyword">heapsize</span> <span class="code-number">2G</span> <span class="code-comment"># 默认 1G 较小，建议 2G+</span>
 
-                                    <span class="code-keyword">statseg</span> {
-                                    <span class="code-keyword">size</span> <span class="code-number">128M</span>
-                                    }
+<span class="code-keyword">statseg</span> {
+  <span class="code-keyword">size</span> <span class="code-number">128M</span>
+}
 
-                                    <span class="code-keyword">cpu</span> {
-                                    <span class="code-keyword">main-core</span> <span class="code-number">0</span>
-                                    <span class="code-keyword">corelist-workers</span> <span
-                                        class="code-number">1-3</span>
-                                    }
-                                </div>
+<span class="code-keyword">cpu</span> {
+  <span class="code-keyword">main-core</span> <span class="code-number">0</span>
+  <span class="code-keyword">corelist-workers</span> <span class="code-number">1-3</span>
+}</div>
                     </div>
                     <div class="card" style="border-top-color: #28a745;">
                         <h3>中型部署 ⭐</h3>
                         <p style="color: #666; margin-bottom: 15px;">100-1000 接口，10K-100K 路由</p>
-                        <div class="code-block" style="font-size: 0.8em;">
-                            <span class="code-keyword">heapsize</span> <span class="code-number">3G</span>
+                        <div class="code-block" style="font-size: 0.8em;"><span class="code-keyword">heapsize</span> <span class="code-number">3G</span>
 
-                            <span class="code-keyword">statseg</span> {
-                            <span class="code-keyword">size</span> <span class="code-number">512M</span>
-                            }
+<span class="code-keyword">statseg</span> {
+  <span class="code-keyword">size</span> <span class="code-number">512M</span>
+}
 
-                            <span class="code-keyword">cpu</span> {
-                            <span class="code-keyword">main-core</span> <span class="code-number">0</span>
-                            <span class="code-keyword">corelist-workers</span> <span class="code-number">1-7</span>
-                            }
+<span class="code-keyword">cpu</span> {
+  <span class="code-keyword">main-core</span> <span class="code-number">0</span>
+  <span class="code-keyword">corelist-workers</span> <span class="code-number">1-7</span>
+}
 
-                            <span class="code-keyword">physmem</span> {
-                            <span class="code-keyword">main-heap-page-size</span> <span class="code-number">2M</span>
-                            }
-                        </div>
+<span class="code-keyword">physmem</span> {
+  <span class="code-keyword">main-heap-page-size</span> <span class="code-number">2M</span>
+}</div>
                     </div>
                     <div class="card" style="border-top-color: #ffc107;">
                         <h3>大型部署</h3>
-                        <p style="color: #666; margin-bottom: 15px;">> 1000 接口，> 100K 路由</p>
-                        <div class="code-block" style="font-size: 0.8em;">
-                            <span class="code-keyword">heapsize</span> <span class="code-number">8G</span>
+                        <p style="color: #666; margin-bottom: 15px;">&gt; 1000 接口，&gt; 100K 路由</p>
+                        <div class="code-block" style="font-size: 0.8em;"><span class="code-keyword">heapsize</span> <span class="code-number">8G</span>
 
-                            <span class="code-keyword">statseg</span> {
-                            <span class="code-keyword">size</span> <span class="code-number">1G</span>
-                            }
+<span class="code-keyword">statseg</span> {
+  <span class="code-keyword">size</span> <span class="code-number">1G</span>
+}
 
-                            <span class="code-keyword">api-segment</span> {
-                            <span class="code-keyword">global-size</span> <span class="code-number">512M</span>
-                            }
+<span class="code-keyword">api-segment</span> {
+  <span class="code-keyword">global-size</span> <span class="code-number">512M</span>
+}
 
-                            <span class="code-keyword">cpu</span> {
-                            <span class="code-keyword">main-core</span> <span class="code-number">0</span>
-                            <span class="code-keyword">corelist-workers</span> <span class="code-number">1-15</span>
-                            }
-                        </div>
+<span class="code-keyword">cpu</span> {
+  <span class="code-keyword">main-core</span> <span class="code-number">0</span>
+  <span class="code-keyword">corelist-workers</span> <span class="code-number">1-15</span>
+}</div>
                     </div>
                 </div>
             </div>
