@@ -435,7 +435,7 @@
                     <div class="memory-block">
                         <div class="memory-block-title">📡 API Segment (api-segment)</div>
                         <div>API 消息队列、VPP ↔ 客户端通信</div>
-                        <div class="memory-block-size">默认：64M (global_vm)</div>
+                        <div class="memory-block-size">默认：global-size 64M, pvt-heap 128KB</div>
                     </div>
                     <div class="memory-block">
                         <div class="memory-block-title">🔧 Per-NUMA Heaps</div>
@@ -481,7 +481,7 @@
                         <tr>
                             <td><strong>API Segment</strong></td>
                             <td><code>api-segment { global-size }</code></td>
-                            <td>64M</td>
+                            <td>global: 64M</td>
                             <td>API 通信</td>
                             <td style="color: #28a745;">✅ 低 (极少 OOM)</td>
                         </tr>
@@ -519,12 +519,15 @@
                         </div>
                         <h3 style="color: #667eea; margin: 30px 0 20px;">用途</h3>
                         <ul>
-                            <li>数据包缓冲区</li>
                             <li>FIB/LPM 路由表</li>
                             <li>ARP/ND 表</li>
                             <li>TCP/UDP 连接表</li>
-                            <li>插件数据结构</li>
+                            <li>接口数据结构</li>
+                            <li>插件元数据和控制结构</li>
                         </ul>
+                        <div class="warning-box" style="margin-top: 15px; font-size: 0.9em;">
+                            <strong>注意：</strong>数据包缓冲区(buffers)在独立的内存区域，通过 <code>buffers-per-numa</code> 配置
+                        </div>
                     </div>
                     <div>
                         <h3 style="color: #667eea; margin-bottom: 20px;">大小计算公式</h3>
@@ -549,48 +552,70 @@
             <div class="slide-number">5</div>
         </div>
 
-        <!-- Slide 6: Main Heap - 为什么在高压下最易 OOM -->
+        <!-- Slide 6: Main Heap 和 Stats Segment 的 OOM 场景 -->
         <div class="slide">
             <div class="slide-header">
-                <h2 class="slide-title">🔥 Main Heap：大压力下的 OOM 重灾区</h2>
+                <h2 class="slide-title">🔥 大规模部署的内存挑战</h2>
             </div>
             <div class="slide-content">
-                <div class="error-box" style="margin-bottom: 30px;">
-                    <h3 style="margin-bottom: 15px;">� 性能瓶颈：默认 1G 配置过低</h3>
-                    <div class="big-number">> 10,000</div>
-                    <p style="text-align: center; font-size: 1.2em;">当 IPsec 隧道或虚拟接口超过 1w 时，1G 内存将立即耗尽！</p>
+                <div class="two-columns">
+                    <div>
+                        <div class="error-box" style="margin-bottom: 20px;">
+                            <h3 style="margin-bottom: 15px;">Main Heap (默认 1G)</h3>
+                            <p>大量 IPsec 隧道、路由表时易 OOM</p>
+                        </div>
+                        <table style="font-size: 0.9em;">
+                            <thead>
+                                <tr>
+                                    <th>IPsec/接口规模</th>
+                                    <th>建议 heapsize</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>< 1,000</td>
+                                    <td style="color: #28a745;">1-2G</td>
+                                </tr>
+                                <tr>
+                                    <td>1,000 - 10,000</td>
+                                    <td style="color: #ffc107;">2-3G</td>
+                                </tr>
+                                <tr style="background: #f8d7da;">
+                                    <td>> 10,000</td>
+                                    <td style="color: #dc3545; font-weight: 700;">4G+</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div>
+                        <div class="warning-box" style="margin-bottom: 20px;">
+                            <h3 style="margin-bottom: 15px;">Stats Segment (默认 32M)</h3>
+                            <p>大量接口统计时易 OOM</p>
+                        </div>
+                        <table style="font-size: 0.9em;">
+                            <thead>
+                                <tr>
+                                    <th>接口数量</th>
+                                    <th>建议 statseg size</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>< 1,000</td>
+                                    <td style="color: #28a745;">32M (默认)</td>
+                                </tr>
+                                <tr>
+                                    <td>1,000 - 10,000</td>
+                                    <td style="color: #ffc107;">64-128M</td>
+                                </tr>
+                                <tr style="background: #f8d7da;">
+                                    <td>> 10,000</td>
+                                    <td style="color: #dc3545; font-weight: 700;">256M+</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>接口数量</th>
-                            <th>所需空间</th>
-                            <th>默认 32M 是否够用</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>100</td>
-                            <td>~21M</td>
-                            <td style="color: #28a745; font-weight: 600;">✅ 够用 (32M 默认OK)</td>
-                        </tr>
-                        <tr style="background: #fff3cd;">
-                            <td>10,000</td>
-                            <td>~60M</td>
-                            <td style="color: #dc3545; font-weight: 700;">❌ 不够 (需 64M)</td>
-                        </tr>
-                        <tr style="background: #f8d7da;">
-                            <td>20,000</td>
-                            <td>~120M</td>
-                            <td style="color: #dc3545; font-weight: 700;">❌ 严重不足 (需 128M+)</td>
-                        </tr>
-                        <tr style="background: #f8d7da;">
-                            <td>4000</td>
-                            <td>~840M</td>
-                            <td style="color: #dc3545; font-weight: 700;">❌ 远远不足</td>
-                        </tr>
-                    </tbody>
-                </table>
             </div>
             <div class="slide-number">6</div>
         </div>
@@ -601,36 +626,40 @@
                 <h2 class="slide-title">Stats Segment 大小计算</h2>
             </div>
             <div class="slide-content">
-                <div class="formula" style="font-size: 1.3em; margin-bottom: 40px;">
-                    每个接口需求 = 144 字节 × 1.5（扩展预留）= 216 字节
+                <div class="highlight-box" style="margin-bottom: 30px;">
+                    <h3 style="color: #667eea; margin-bottom: 15px;">📊 Stats Segment 存储内容</h3>
+                    <ul style="font-size: 1.1em;">
+                        <li><strong>简单计数器 (counter_t)</strong>：8 字节/计数器</li>
+                        <li><strong>组合计数器 (vlib_counter_t)</strong>：16 字节/计数器 (packets + bytes)</li>
+                        <li>每个接口有多个计数器 (rx/tx packets, bytes, drops, errors 等)</li>
+                    </ul>
                 </div>
-                <div class="formula" style="font-size: 1.5em; margin-bottom: 40px;">
-                    Stats Segment = 基础开销 + (接口数 × 216 字节 × 2)
+                <div class="formula" style="font-size: 1.3em; margin-bottom: 40px;">
+                    经验公式：Stats Segment ≈ 基础开销 + (接口数 × 线程数 × ~500 字节)
                 </div>
                 <h3 style="color: #667eea; margin: 30px 0 20px; text-align: center;">推荐配置</h3>
                 <div class="three-columns">
                     <div class="card">
-                        <h3>
-                            < 10,000 接口</h3>
+                        <h3>< 1,000 接口</h3>
                                 <div class="code-block">
                                     statseg {
-                                    size <span class="code-number">64M</span>
+                                    size <span class="code-number">32M</span> <span class="code-comment"># 默认</span>
                                     }
                                 </div>
                     </div>
                     <div class="card" style="border-top-color: #28a745;">
-                        <h3>1000-10000 接口</h3>
+                        <h3>1,000-10,000 接口</h3>
                         <div class="code-block">
                             statseg {
-                            size <span class="code-number">256M</span>
+                            size <span class="code-number">128M</span>
                             }
                         </div>
                     </div>
                     <div class="card" style="border-top-color: #ffc107;">
-                        <h3>10000-200000 接口 ⭐</h3>
+                        <h3>> 10,000 接口 ⭐</h3>
                         <div class="code-block">
                             statseg {
-                            size <span class="code-number">512M</span>
+                            size <span class="code-number">256M-512M</span>
                             }
                         </div>
                     </div>
@@ -943,12 +972,12 @@
                         │ • 其他 → Main Heap 问题<br>
                         │<br>
                         ├─→ <strong>2. 查看当前内存使用</strong><br>
-                        │ vppctl show memory [segment]<br>
+                        │ vppctl show memory [main-heap|api-segment|stats-segment]<br>
                         │<br>
-                        ├─→ <strong>3. 计算实际需求</strong><br>
-                        │ • 接口数量 × 216 字节 (stats)<br>
-                        │ • 路由数量 × 256 字节 (main)<br>
-                        │ • API 调用频率 (api)<br>
+                        ├─→ <strong>3. 评估实际需求</strong><br>
+                        │ • 接口/隧道数量 (show interface)<br>
+                        │ • 路由表规模 (show ip fib summary)<br>
+                        │ • API 调用频率 (show api ring-stats)<br>
                         │<br>
                         └─→ <strong>4. 调整配置并重启</strong><br>
                         修改 startup.conf → 重启 VPP
@@ -1026,10 +1055,11 @@
                             </ul>
                         </div>
                         <div class="highlight-box" style="margin-top: 30px;">
-                            <h3 style="margin-bottom: 15px;">📊 Stats Segment 适度调整</h3>
+                            <h3 style="margin-bottom: 15px;">📊 Stats Segment 按接口规模调整</h3>
                             <ul style="font-size: 1.1em;">
-                                <li>默认 32M 正常够用</li>
-                                <li>1w 接口时需上调到 64M</li>
+                                <li>默认 32M 适合 < 1k 接口</li>
+                                <li>1k-10k 接口时需 128M</li>
+                                <li>> 10k 接口时需 256M+</li>
                             </ul>
                         </div>
                         <div class="success-box" style="margin-top: 30px;">
