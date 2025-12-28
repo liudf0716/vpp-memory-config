@@ -741,50 +741,61 @@ free: 2.49G, trimmable: 1.97G
             <div class="slide-content">
                 <div class="two-columns">
                     <div>
-                        <h3 style="color: #667eea; margin-bottom: 20px;">参数关系</h3>
+                        <h3 style="color: #667eea; margin-bottom: 20px;">API 内存架构</h3>
                         <div class="highlight-box">
-                            <div style="font-family: monospace; font-size: 1.1em;">
-                                ┌─ global_vm (global-size: 256M) ─┐<br>
-                                │ ┌─ API Segment (128M) ─┐ │<br>
-                                │ └────────────────────────┘ │<br>
-                                │ ┌─ Private Heap (64M) ──┐ │<br>
-                                │ └────────────────────────┘ │<br>
-                                │ 其他开销... │<br>
-                                └───────────────────────────────────┘
+                            <div style="font-family: monospace; font-size: 0.95em; line-height: 1.6;">
+                                ┌─────── API Segment 内存布局 ───────┐<br>
+                                │ ┌─ api-queue (消息排队) ────────┐ │<br>
+                                │ │ 默认长度: 1024 (最小值)       │ │<br>
+                                │ └───────────────────────────────┘ │<br>
+                                │ ┌─ vlib rings (VPP→客户端) ────┐ │<br>
+                                │ │ 88B×1024, 280B×128, 1048B×64 │ │<br>
+                                │ └───────────────────────────────┘ │<br>
+                                │ ┌─ client rings (客户端→VPP) ──┐ │<br>
+                                │ │ 1048B×1024, 2072B×128, 4120B×8│ │<br>
+                                │ └───────────────────────────────┘ │<br>
+                                └─────────────────────────────────────┘
                             </div>
                         </div>
-                        <div class="formula" style="margin-top: 30px;">
-                            global-size ≥ api-size + api-pvt-heap-size + 开销
-                        </div>
-                        <div class="warning-box" style="margin-top: 20px;">
-                            <strong>⚠️ 常见错误：</strong><br>
-                            只设置 api-size 而不设置 global-size！
+                        <h3 style="color: #667eea; margin: 20px 0 15px;">配置参数</h3>
+                        <div class="code-block" style="font-size: 0.85em;">
+<span class="code-keyword">api-segment</span> {
+  <span class="code-keyword">global-size</span> <span class="code-number">128M</span>   <span class="code-comment"># 全局区域大小</span>
+  <span class="code-keyword">api-size</span> <span class="code-number">64M</span>       <span class="code-comment"># API段大小(默认16M)</span>
+}
+
+<span class="code-keyword">api-queue</span> {
+  <span class="code-keyword">length</span> <span class="code-number">4096</span>       <span class="code-comment"># 消息队列长度(默认1024)</span>
+}
                         </div>
                     </div>
                     <div>
-                        <h3 style="color: #667eea; margin-bottom: 20px;">何时需要调整？</h3>
-                        <div class="success-box">
-                            <strong>✅ 需要增加：</strong>
-                            <ul>
-                                <li>高频 API 调用</li>
-                                <li>多个并发客户端</li>
-                                <li>ring misses > 10%</li>
-                                <li>批量操作（接口/路由）</li>
-                            </ul>
+                        <h3 style="color: #667eea; margin-bottom: 20px;">Ring 统计解读</h3>
+                        <div class="code-block" style="font-size: 0.8em;">
+<span class="code-comment"># vppctl show api ring-stats</span>
+   Owner   Size  Nitems    Hits  Misses
+    vlib     88    1024   47222   14365  <span class="code-comment"># ⚠️ 23% miss</span>
+    vlib    280     128    2501   11866  <span class="code-comment"># 🔥 83% miss!</span>
+    vlib   1048      64     354   11535  <span class="code-comment"># 🔥 97% miss!</span>
+    clnt   1048    1024   48411       0  <span class="code-comment"># ✅ 完美</span>
+11535 ring miss fallback allocations
                         </div>
-                        <div class="error-box" style="margin-top: 20px;">
-                            <strong>❌ 不需要增加：</strong>
-                            <ul>
-                                <li>偶尔的 CLI 命令</li>
-                                <li>单一客户端使用</li>
-                                <li>ring misses 很低</li>
-                            </ul>
+                        <div class="error-box" style="margin-top: 15px; font-size: 0.9em;">
+                            <strong>🔥 问题分析：</strong><br>
+                            • <strong>Misses</strong> 表示 ring 缓冲不足，需要 fallback 到堆分配<br>
+                            • miss率 > 10% 说明预分配 ring 容量不足<br>
+                            • 11535 次 fallback 分配会影响性能
                         </div>
-                        <h3 style="color: #667eea; margin: 30px 0 20px;">监控命令</h3>
-                        <div class="code-block">
-                            vppctl show api ring-stats
-                            vppctl show api clients
-                            vppctl show memory api-segment
+                        <div class="success-box" style="margin-top: 15px; font-size: 0.9em;">
+                            <strong>✅ 健康状态应该是：</strong><br>
+                            • 所有 ring 的 Misses ≈ 0<br>
+                            • fallback allocations = 0
+                        </div>
+                        <h3 style="color: #667eea; margin: 20px 0 15px;">监控命令</h3>
+                        <div class="code-block" style="font-size: 0.85em;">
+vppctl show api ring-stats    <span class="code-comment"># Ring使用情况</span>
+vppctl show memory api-segment <span class="code-comment"># 内存使用</span>
+vppctl show api clients       <span class="code-comment"># 连接的客户端</span>
                         </div>
                     </div>
                 </div>
@@ -792,7 +803,68 @@ free: 2.49G, trimmable: 1.97G
             <div class="slide-number">9</div>
         </div>
 
-        <!-- Slide 10: NUMA 优化 -->
+        <!-- Slide 10: API Ring 优化实战案例 -->
+        <div class="slide">
+            <div class="slide-header">
+                <h2 class="slide-title">API Ring 优化实战案例</h2>
+            </div>
+            <div class="slide-content">
+                <div class="two-columns">
+                    <div>
+                        <h3 style="color: #dc3545; margin-bottom: 20px;">❌ 问题现象</h3>
+                        <div class="code-block" style="font-size: 0.8em;">
+<span class="code-comment"># 大量 API 请求后的统计</span>
+vpp# show api ring-stats
+   Owner   Size  Nitems    Hits  Misses
+    vlib     88    1024   47222   14365
+    vlib    280     128    2501   11866
+    vlib   1048      64     354   11535
+<span class="code-string">11535 ring miss fallback allocations</span>
+
+vpp# show memory api-segment
+base 0x130042000, size <span class="code-number">32m</span>, locked
+  total: 32.00M, used: 2.07M, free: 29.93M
+                        </div>
+                        <div class="error-box" style="margin-top: 15px; font-size: 0.9em;">
+                            <strong>问题原因：</strong><br>
+                            • vlib 280B ring 只有 128 个槽位，miss 率 83%<br>
+                            • vlib 1048B ring 只有 64 个槽位，miss 率 97%<br>
+                            • 大量消息需要从堆分配，性能下降
+                        </div>
+                    </div>
+                    <div>
+                        <h3 style="color: #28a745; margin-bottom: 20px;">✅ 优化配置</h3>
+                        <div class="code-block" style="font-size: 0.85em;">
+<span class="code-comment"># startup.conf 优化配置</span>
+<span class="code-keyword">api-segment</span> {
+  <span class="code-keyword">gid</span> vpp
+  <span class="code-keyword">api-size</span> <span class="code-number">64M</span>       <span class="code-comment"># 增大API段</span>
+  <span class="code-keyword">global-size</span> <span class="code-number">128M</span>  <span class="code-comment"># 必须 > api-size</span>
+}
+
+<span class="code-keyword">api-queue</span> {
+  <span class="code-keyword">length</span> <span class="code-number">4096</span>       <span class="code-comment"># 增大队列容量</span>
+}
+                        </div>
+                        <div class="warning-box" style="margin-top: 15px; font-size: 0.9em;">
+                            <strong>⚠️ Ring 大小是编译时固定的：</strong><br>
+                            若需调整单个 ring 的 nitems，需修改源码：<br>
+                            <code style="font-size: 0.85em;">src/vlibapi/memory_shared.h</code><br>
+                            中的 <code>foreach_vl_aring_size</code> 宏
+                        </div>
+                        <div class="success-box" style="margin-top: 15px; font-size: 0.9em;">
+                            <strong>✅ 其他优化建议：</strong><br>
+                            • 使用 Socket API 减少共享内存压力<br>
+                            • 批量合并 API 请求<br>
+                            • 降低 API 调用频率
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-number">10</div>
+        </div>
+
+        <!-- Slide 11: NUMA 优化 -->
         <div class="slide">
             <div class="slide-header">
                 <h2 class="slide-title">NUMA 架构优化</h2>
@@ -849,10 +921,10 @@ free: 2.49G, trimmable: 1.97G
                     </div>
                 </div>
             </div>
-            <div class="slide-number">10</div>
+            <div class="slide-number">11</div>
         </div>
 
-        <!-- Slide 11: 推荐配置模板 -->
+        <!-- Slide 12: 推荐配置模板 -->
         <div class="slide">
             <div class="slide-header">
                 <h2 class="slide-title">推荐配置模板</h2>
@@ -911,10 +983,10 @@ free: 2.49G, trimmable: 1.97G
                     </div>
                 </div>
             </div>
-            <div class="slide-number">11</div>
+            <div class="slide-number">12</div>
         </div>
 
-        <!-- Slide 12: 性能优化优先级 -->
+        <!-- Slide 13: 性能优化优先级 -->
         <div class="slide">
             <div class="slide-header">
                 <h2 class="slide-title">性能优化优先级</h2>
@@ -945,10 +1017,10 @@ free: 2.49G, trimmable: 1.97G
                     </ul>
                 </div>
             </div>
-            <div class="slide-number">12</div>
+            <div class="slide-number">13</div>
         </div>
 
-        <!-- Slide 13: OOM 问题排查流程 -->
+        <!-- Slide 14: OOM 问题排查流程 -->
         <div class="slide">
             <div class="slide-header">
                 <h2 class="slide-title">OOM 问题排查流程</h2>
@@ -976,10 +1048,10 @@ free: 2.49G, trimmable: 1.97G
                     </div>
                 </div>
             </div>
-            <div class="slide-number">13</div>
+            <div class="slide-number">14</div>
         </div>
 
-        <!-- Slide 14: 常用诊断命令 -->
+        <!-- Slide 15: 常用诊断命令 -->
         <div class="slide">
             <div class="slide-header">
                 <h2 class="slide-title">常用诊断命令速查</h2>
@@ -1005,9 +1077,9 @@ free: 2.49G, trimmable: 1.97G
                             <td>used / total > 90%</td>
                         </tr>
                         <tr>
-                            <td><strong>API 诊断</strong></td>
-                            <td><code>show memory api-segment</code> 或 <code>show api ring-stats</code></td>
-                            <td>ring misses > 10%</td>
+                            <td><strong>API Ring 不足</strong></td>
+                            <td><code>show api ring-stats</code></td>
+                            <td>ring misses > 10% 或 fallback > 0</td>
                         </tr>
                         <tr>
                             <td><strong>NUMA 问题</strong></td>
@@ -1027,10 +1099,10 @@ free: 2.49G, trimmable: 1.97G
                     </tbody>
                 </table>
             </div>
-            <div class="slide-number">14</div>
+            <div class="slide-number">15</div>
         </div>
 
-        <!-- Slide 15: 关键要点总结 -->
+        <!-- Slide 16: 关键要点总结 -->
         <div class="slide">
             <div class="slide-header">
                 <h2 class="slide-title">关键要点总结</h2>
@@ -1068,8 +1140,9 @@ free: 2.49G, trimmable: 1.97G
                             <h3 style="margin-bottom: 15px;">🔧 API Segment 按需配置</h3>
                             <ul style="font-size: 1.1em;">
                                 <li>低频使用：默认即可</li>
-                                <li>高频 API：256M-512M</li>
-                                <li>注意 global-size 必须大于 api-size</li>
+                                <li>高频 API：api-size 64M, global-size 128M</li>
+                                <li>api-queue length 可增至 4096</li>
+                                <li>监控 ring misses，> 10% 需优化</li>
                             </ul>
                         </div>
                         <div class="warning-box" style="margin-top: 30px;">
@@ -1083,10 +1156,10 @@ free: 2.49G, trimmable: 1.97G
                     </div>
                 </div>
             </div>
-            <div class="slide-number">15</div>
+            <div class="slide-number">16</div>
         </div>
 
-        <!-- Slide 16: 联系方式 -->
+        <!-- Slide 17: 联系方式 -->
         <div class="slide">
             <div class="slide-header">
                 <h2 class="slide-title">感谢观看！</h2>
@@ -1112,7 +1185,7 @@ free: 2.49G, trimmable: 1.97G
                     <p>© 2025 VPP 技术分享 | 保留所有权利</p>
                 </div>
             </div>
-            <div class="slide-number">16</div>
+            <div class="slide-number">17</div>
         </div>
     </div>
 
