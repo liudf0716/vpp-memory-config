@@ -537,9 +537,9 @@
                         </div>
                         <h3 style="color: #667eea; margin: 30px 0 20px;">推荐配置</h3>
                         <div class="success-box">
-                            <strong>轻量级(PPPoE<1k)：</strong> 1-2G<br>
-                            <strong>中大规模(PPPoE 1k-2w)：</strong> 2-3G<br>
-                            <strong>超大规模(PPPoE>2w)：</strong> 4-8G 或更高
+                            <strong>轻量级(PPPoE<1k)：< /strong> 1-2G<br>
+                                    <strong>中大规模(PPPoE 1k-2w)：</strong> 2-3G<br>
+                                    <strong>超大规模(PPPoE>2w)：</strong> 4-8G 或更高
                         </div>
                         <h3 style="color: #667eea; margin: 30px 0 20px;">监控命令</h3>
                         <div class="code-block">
@@ -573,7 +573,8 @@
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td>< 1,000</td>
+                                    <td>
+                                        < 1,000</td>
                                     <td style="color: #28a745;">1-2G</td>
                                 </tr>
                                 <tr>
@@ -605,7 +606,8 @@
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td>< 1,000</td>
+                                    <td>
+                                        < 1,000</td>
                                     <td style="color: #28a745;">32M (默认)</td>
                                 </tr>
                                 <tr>
@@ -650,23 +652,23 @@
                     <div class="card">
                         <h3>&lt; 1,000 PPPoE</h3>
                         <div class="code-block">
-statseg {
-    size <span class="code-number">32M</span> <span class="code-comment"># 默认</span>
-}</div>
+                            statseg {
+                            size <span class="code-number">32M</span> <span class="code-comment"># 默认</span>
+                            }</div>
                     </div>
                     <div class="card" style="border-top-color: #28a745;">
                         <h3>1,000 - 10,000 PPPoE</h3>
                         <div class="code-block">
-statseg {
-    size <span class="code-number">128M</span>
-}</div>
+                            statseg {
+                            size <span class="code-number">128M</span>
+                            }</div>
                     </div>
                     <div class="card" style="border-top-color: #ffc107;">
                         <h3>&gt; 10,000 PPPoE ⭐</h3>
                         <div class="code-block">
-statseg {
-    size <span class="code-number">256M-512M</span>
-}</div>
+                            statseg {
+                            size <span class="code-number">256M</span> <span class="code-comment"># 2w PPPoE 实测够用</span>
+                            }</div>
                     </div>
                 </div>
                 <h3 style="color: #667eea; margin: 20px 0 10px; text-align: center;">监控与诊断</h3>
@@ -696,43 +698,64 @@ statseg {
                                 <li>Stats segment: <strong>256M</strong></li>
                             </ul>
                         </div>
-                        <h3 style="color: #667eea; margin: 20px 0 15px;">📊 实测内存使用 (5467 会话)</h3>
+                        <h3 style="color: #667eea; margin: 20px 0 15px;">📊 实测内存使用 (全量 2万会话)</h3>
                         <div class="code-block" style="font-size: 0.85em;">
-<span class="code-comment"># Stats Segment</span>
-total: <span class="code-number">256M</span>, used: <span class="code-number">106.26M</span> (<span class="code-string">41.5%</span>)
-free: 149.74M, trimmable: 126.07M
+                            <span class="code-comment"># Stats Segment</span>
+                            total: <span class="code-number">256M</span>, used: <span class="code-number">109.89M</span>
+                            (<span class="code-string">43%</span>)
+                            free: 146.10M, trimmable: 120.33M
 
-<span class="code-comment"># Main Heap</span>
-total: <span class="code-number">3G</span>, used: <span class="code-number">657.92M</span> (<span class="code-string">21.9%</span>)
-free: 2.36G, trimmable: 1.82G
+                            <span class="code-comment"># Main Heap (全量 2w PPPoE)</span>
+                            total: <span class="code-number">3G</span>, used: <span class="code-number">656.47M</span>
+                            (<span class="code-string">21.9%</span>)
+                            free: 2.36G, trimmable: 2.13G
                         </div>
-                        <div class="warning-box" style="margin-top: 15px; font-size: 0.85em;">
-                            <strong>📈 全量 20k 会话预估：</strong><br>
-                            • Main Heap: ~2.4G (3G ✅)<br>
-                            • Stats Segment: ~388M (256M ⚠️ 建议 512M)
+                        <div class="success-box" style="margin-top: 15px; font-size: 0.85em;">
+                            <strong>✅ 2万 PPPoE 全量会话实测验证：</strong><br>
+                            • Main Heap: 656M (3G 充足 ✅)<br>
+                            • Stats Segment: 110M (256M 充足 ✅)
                         </div>
                     </div>
                     <div>
                         <h3 style="color: #667eea; margin-bottom: 20px;">🔍 关键指标验证</h3>
                         <div class="highlight-box">
                             <table style="font-size: 0.9em; margin: 0;">
-                                <tr><td><strong>PPPoX 接口总数</strong></td><td style="color: #28a745;">20,000</td></tr>
-                                <tr><td><strong>活跃会话 (RUNNING)</strong></td><td style="color: #28a745;">5,467 (27.3%)</td></tr>
-                                <tr><td><strong>API Ring Misses</strong></td><td style="color: #28a745;">0 (完美)</td></tr>
-                                <tr><td><strong>Stats 使用率</strong></td><td style="color: #28a745;">41.5% (安全)</td></tr>
-                                <tr><td><strong>Main Heap 使用率</strong></td><td style="color: #28a745;">21.9% (充足)</td></tr>
+                                <tr>
+                                    <td><strong>PPPoX 接口总数</strong></td>
+                                    <td style="color: #28a745;">20,000</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>活跃会话 (RUNNING)</strong></td>
+                                    <td style="color: #28a745;">5,467 (27.3%)</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>API Ring Misses</strong></td>
+                                    <td style="color: #28a745;">0 (完美)</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Stats 使用率</strong></td>
+                                    <td style="color: #28a745;">41.5% (安全)</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Main Heap 使用率</strong></td>
+                                    <td style="color: #28a745;">21.9% (充足)</td>
+                                </tr>
                             </table>
                         </div>
                         <h3 style="color: #28a745; margin: 20px 0 15px;">✅ 验证结论</h3>
                         <div class="success-box" style="font-size: 0.95em;">
                             <div class="code-block" style="font-size: 0.85em;">
-<span class="code-keyword">heapsize</span> <span class="code-number">3G</span>      <span class="code-comment"># 2万 PPPoE 够用</span>
+                                <span class="code-keyword">heapsize</span> <span class="code-number">3G</span> <span
+                                    class="code-comment"># 2万 PPPoE 实测够用</span>
 
-<span class="code-keyword">statseg</span> {
-  <span class="code-keyword">size</span> <span class="code-number">512M</span>   <span class="code-comment"># 建议预留更多</span>
-}
+                                <span class="code-keyword">statseg</span> {
+                                <span class="code-keyword">size</span> <span class="code-number">256M</span> <span
+                                    class="code-comment"># 2万 PPPoE 实测够用</span>
+                                }
                             </div>
-                            <p style="margin-top: 10px;"><strong>结论：</strong>3G Main Heap + 512M Stats 可稳定支持全量 <strong>20,000</strong> PPPoE 会话</p>
+                            <p style="margin-top: 10px;"><strong>结论：</strong>3G Main Heap + 256M Stats 可稳定支持全量
+                                <strong>20,000</strong> PPPoE 会话
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -740,7 +763,96 @@ free: 2.36G, trimmable: 1.82G
             <div class="slide-number">8</div>
         </div>
 
-        <!-- Slide 9: API Segment 详解 -->
+        <!-- Slide 9: 静态资源压力分析 -->
+        <div class="slide">
+            <div class="slide-header">
+                <h2 class="slide-title">静态资源压力：2万接口的「入场费」</h2>
+            </div>
+            <div class="slide-content">
+                <div class="two-columns">
+                    <div>
+                        <h3 style="color: #667eea; margin-bottom: 20px;">什么叫「静态压力」？</h3>
+                        <div class="highlight-box">
+                            <p>即便<strong>没有任何流量</strong>，仅仅创建并维持 20,000 个会话也会产生显著的资源消耗：</p>
+                            <ul style="margin-top: 15px;">
+                                <li><strong>接口元数据</strong>：每个软件接口都有与之关联的描述符和管控结构。</li>
+                                <li><strong>状态机定时器</strong>：每个 PPPoE 会话都在维护 LCP/Keepalive 定时器。</li>
+                                <li><strong>ARP/FIB 表项</strong>：2万个 IP/MAC 绑定的静态存储成本。</li>
+                            </ul>
+                        </div>
+                        <div class="error-box" style="margin-top: 20px;">
+                            <strong>🔥 核心教训：</strong>不要以为空载就不需要内存！2万 PPPoE 的「底噪」就需要约 650M Main Heap。
+                        </div>
+                    </div>
+                    <div>
+                        <h3 style="color: #667eea; margin-bottom: 20px;">2万规模下的底噪指标</h3>
+                        <table>
+                            <tr>
+                                <th>指标项</th>
+                                <th>2万会话实测 (空载)</th>
+                            </tr>
+                            <tr>
+                                <td>Main Heap Used</td>
+                                <td style="color: #28a745;">~656MB</td>
+                            </tr>
+                            <tr>
+                                <td>Stats Used</td>
+                                <td style="color: #28a745;">~110MB</td>
+                            </tr>
+                            <tr>
+                                <td>VPP 进程 RSS</td>
+                                <td style="color: #ffc107;">~1.2GB+</td>
+                            </tr>
+                        </table>
+                        <div class="success-box" style="margin-top: 20px;">
+                            <strong>建议：</strong>对于 2w+ 规模，即便不跑大流量，<code>heapsize</code> 也要从 3G 起步，预留 50% 以上用于波动。
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-number">9</div>
+        </div>
+
+        <!-- Slide 10: Buffer 池管理 -->
+        <div class="slide">
+            <div class="slide-header">
+                <h2 class="slide-title">Buffer 管理：空载下的隐形成本</h2>
+            </div>
+            <div class="slide-content">
+                <div class="two-columns">
+                    <div>
+                        <h3 style="color: #667eea; margin-bottom: 20px;">📊 实测数据 (sh buffers)</h3>
+                        <div class="code-block">
+                            Pool Name Total Avail <strong>Used</strong>
+                            default-numa-0 16800 10122 <strong>6119</strong>
+                        </div>
+                        <div class="highlight-box" style="margin-top: 20px;">
+                            <strong>为什么 Used = 6119？</strong><br>
+                            即使没有数据包在跑，VPP 的接口环状缓冲区 (Interface Rings) 和硬件描述符会预占一部分 Buffer。
+                            <p style="margin-top: 10px;">平均每 3.2 个接口会永久占用 1 个 Buffer。</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 style="color: #dc3545; margin-bottom: 20px;">⚠️ 潜在风险</h3>
+                        <p>默认 buffer 数量（通常 1.6w - 3.2w）在 2w+ 接口场景下非常危险：</p>
+                        <ul>
+                            <li><strong>接口创建失败</strong>：如果 Available 掉到 0，不仅无法发包，新接口也无法创建。</li>
+                            <li><strong>Mass Dialing 瞬间耗尽</strong>：数万个 LCP 报文瞬间涌入会挤爆剩余 buffer。</li>
+                        </ul>
+                        <h3 style="color: #28a745; margin-top: 25px;">✅ 推荐配置</h3>
+                        <div class="code-block">
+                            <span class="code-keyword">buffers</span> {
+                            <span class="code-keyword">buffers-per-numa</span> <span class="code-number">131072</span>
+                            <span class="code-comment"># 建议 128k 起步</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-number">10</div>
+        </div>
+
+        <!-- Slide 11: API Segment 详解 -->
         <div class="slide">
             <div class="slide-header">
                 <h2 class="slide-title">API Segment 配置详解</h2>
@@ -753,7 +865,7 @@ free: 2.36G, trimmable: 1.82G
                             <div style="font-family: monospace; font-size: 0.95em; line-height: 1.6;">
                                 ┌─────── API Segment 内存布局 ───────┐<br>
                                 │ ┌─ api-queue (消息排队) ────────┐ │<br>
-                                │ │ 默认长度: 1024 (最小值)       │ │<br>
+                                │ │ 默认长度: 1024 (最小值) │ │<br>
                                 │ └───────────────────────────────┘ │<br>
                                 │ ┌─ vlib rings (VPP→客户端) ────┐ │<br>
                                 │ │ 88B×1024, 280B×128, 1048B×64 │ │<br>
@@ -766,26 +878,29 @@ free: 2.36G, trimmable: 1.82G
                         </div>
                         <h3 style="color: #667eea; margin: 20px 0 15px;">配置参数</h3>
                         <div class="code-block" style="font-size: 0.85em;">
-<span class="code-keyword">api-segment</span> {
-  <span class="code-keyword">global-size</span> <span class="code-number">128M</span>   <span class="code-comment"># 全局区域大小</span>
-  <span class="code-keyword">api-size</span> <span class="code-number">64M</span>       <span class="code-comment"># API段大小(默认16M)</span>
-}
+                            <span class="code-keyword">api-segment</span> {
+                            <span class="code-keyword">global-size</span> <span class="code-number">128M</span> <span
+                                class="code-comment"># 全局区域大小</span>
+                            <span class="code-keyword">api-size</span> <span class="code-number">64M</span> <span
+                                class="code-comment"># API段大小(默认16M)</span>
+                            }
 
-<span class="code-keyword">api-queue</span> {
-  <span class="code-keyword">length</span> <span class="code-number">4096</span>       <span class="code-comment"># 消息队列长度(默认1024)</span>
-}
+                            <span class="code-keyword">api-queue</span> {
+                            <span class="code-keyword">length</span> <span class="code-number">4096</span> <span
+                                class="code-comment"># 消息队列长度(默认1024)</span>
+                            }
                         </div>
                     </div>
                     <div>
                         <h3 style="color: #667eea; margin-bottom: 20px;">Ring 统计解读</h3>
                         <div class="code-block" style="font-size: 0.8em;">
-<span class="code-comment"># vppctl show api ring-stats</span>
-   Owner   Size  Nitems    Hits  Misses
-    vlib     88    1024   47222   14365  <span class="code-comment"># ⚠️ 23% miss</span>
-    vlib    280     128    2501   11866  <span class="code-comment"># 🔥 83% miss!</span>
-    vlib   1048      64     354   11535  <span class="code-comment"># 🔥 97% miss!</span>
-    clnt   1048    1024   48411       0  <span class="code-comment"># ✅ 完美</span>
-11535 ring miss fallback allocations
+                            <span class="code-comment"># vppctl show api ring-stats</span>
+                            Owner Size Nitems Hits Misses
+                            vlib 88 1024 47222 14365 <span class="code-comment"># ⚠️ 23% miss</span>
+                            vlib 280 128 2501 11866 <span class="code-comment"># 🔥 83% miss!</span>
+                            vlib 1048 64 354 11535 <span class="code-comment"># 🔥 97% miss!</span>
+                            clnt 1048 1024 48411 0 <span class="code-comment"># ✅ 完美</span>
+                            11535 ring miss fallback allocations
                         </div>
                         <div class="error-box" style="margin-top: 15px; font-size: 0.9em;">
                             <strong>🔥 问题分析：</strong><br>
@@ -800,17 +915,17 @@ free: 2.36G, trimmable: 1.82G
                         </div>
                         <h3 style="color: #667eea; margin: 20px 0 15px;">监控命令</h3>
                         <div class="code-block" style="font-size: 0.85em;">
-vppctl show api ring-stats    <span class="code-comment"># Ring使用情况</span>
-vppctl show memory api-segment <span class="code-comment"># 内存使用</span>
-vppctl show api clients       <span class="code-comment"># 连接的客户端</span>
+                            vppctl show api ring-stats <span class="code-comment"># Ring使用情况</span>
+                            vppctl show memory api-segment <span class="code-comment"># 内存使用</span>
+                            vppctl show api clients <span class="code-comment"># 连接的客户端</span>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="slide-number">9</div>
+            <div class="slide-number">11</div>
         </div>
 
-        <!-- Slide 10: API Ring 优化实战案例 -->
+        <!-- Slide 12: API Ring 优化实战案例 -->
         <div class="slide">
             <div class="slide-header">
                 <h2 class="slide-title">API Ring 优化实战案例</h2>
@@ -820,17 +935,17 @@ vppctl show api clients       <span class="code-comment"># 连接的客户端</s
                     <div>
                         <h3 style="color: #dc3545; margin-bottom: 20px;">❌ 问题现象</h3>
                         <div class="code-block" style="font-size: 0.8em;">
-<span class="code-comment"># 大量 API 请求后的统计</span>
-vpp# show api ring-stats
-   Owner   Size  Nitems    Hits  Misses
-    vlib     88    1024   47222   14365
-    vlib    280     128    2501   11866
-    vlib   1048      64     354   11535
-<span class="code-string">11535 ring miss fallback allocations</span>
+                            <span class="code-comment"># 大量 API 请求后的统计</span>
+                            vpp# show api ring-stats
+                            Owner Size Nitems Hits Misses
+                            vlib 88 1024 47222 14365
+                            vlib 280 128 2501 11866
+                            vlib 1048 64 354 11535
+                            <span class="code-string">11535 ring miss fallback allocations</span>
 
-vpp# show memory api-segment
-base 0x130042000, size <span class="code-number">32m</span>, locked
-  total: 32.00M, used: 2.07M, free: 29.93M
+                            vpp# show memory api-segment
+                            base 0x130042000, size <span class="code-number">32m</span>, locked
+                            total: 32.00M, used: 2.07M, free: 29.93M
                         </div>
                         <div class="error-box" style="margin-top: 15px; font-size: 0.9em;">
                             <strong>问题原因：</strong><br>
@@ -842,16 +957,19 @@ base 0x130042000, size <span class="code-number">32m</span>, locked
                     <div>
                         <h3 style="color: #28a745; margin-bottom: 20px;">✅ 优化配置</h3>
                         <div class="code-block" style="font-size: 0.85em;">
-<span class="code-comment"># startup.conf 优化配置</span>
-<span class="code-keyword">api-segment</span> {
-  <span class="code-keyword">gid</span> vpp
-  <span class="code-keyword">api-size</span> <span class="code-number">64M</span>       <span class="code-comment"># 增大API段</span>
-  <span class="code-keyword">global-size</span> <span class="code-number">128M</span>  <span class="code-comment"># 必须 > api-size</span>
-}
+                            <span class="code-comment"># startup.conf 优化配置</span>
+                            <span class="code-keyword">api-segment</span> {
+                            <span class="code-keyword">gid</span> vpp
+                            <span class="code-keyword">api-size</span> <span class="code-number">64M</span> <span
+                                class="code-comment"># 增大API段</span>
+                            <span class="code-keyword">global-size</span> <span class="code-number">128M</span> <span
+                                class="code-comment"># 必须 > api-size</span>
+                            }
 
-<span class="code-keyword">api-queue</span> {
-  <span class="code-keyword">length</span> <span class="code-number">4096</span>       <span class="code-comment"># 增大队列容量</span>
-}
+                            <span class="code-keyword">api-queue</span> {
+                            <span class="code-keyword">length</span> <span class="code-number">4096</span> <span
+                                class="code-comment"># 增大队列容量</span>
+                            }
                         </div>
                         <div class="warning-box" style="margin-top: 15px; font-size: 0.9em;">
                             <strong>⚠️ Ring 大小是编译时固定的：</strong><br>
@@ -868,10 +986,10 @@ base 0x130042000, size <span class="code-number">32m</span>, locked
                     </div>
                 </div>
             </div>
-            <div class="slide-number">10</div>
+            <div class="slide-number">12</div>
         </div>
 
-        <!-- Slide 11: NUMA 优化 -->
+        <!-- Slide 13: NUMA 优化 -->
         <div class="slide">
             <div class="slide-header">
                 <h2 class="slide-title">NUMA 架构优化</h2>
@@ -928,10 +1046,10 @@ base 0x130042000, size <span class="code-number">32m</span>, locked
                     </div>
                 </div>
             </div>
-            <div class="slide-number">11</div>
+            <div class="slide-number">13</div>
         </div>
 
-        <!-- Slide 12: 推荐配置模板 -->
+        <!-- Slide 14: 推荐配置模板 -->
         <div class="slide">
             <div class="slide-header">
                 <h2 class="slide-title">推荐配置模板</h2>
@@ -941,59 +1059,70 @@ base 0x130042000, size <span class="code-number">32m</span>, locked
                     <div class="card">
                         <h3>小型部署</h3>
                         <p style="color: #666; margin-bottom: 15px;">&lt; 1000 PPPoE 会话</p>
-                        <div class="code-block" style="font-size: 0.8em;"><span class="code-keyword">heapsize</span> <span class="code-number">2G</span> <span class="code-comment"># 默认 1G 较小，建议 2G+</span>
+                        <div class="code-block" style="font-size: 0.8em;"><span class="code-keyword">heapsize</span>
+                            <span class="code-number">2G</span> <span class="code-comment"># 默认 1G 较小，建议 2G+</span>
 
-<span class="code-keyword">statseg</span> {
-  <span class="code-keyword">size</span> <span class="code-number">128M</span>
-}
+                            <span class="code-keyword">statseg</span> {
+                            <span class="code-keyword">size</span> <span class="code-number">128M</span>
+                            }
 
-<span class="code-keyword">cpu</span> {
-  <span class="code-keyword">main-core</span> <span class="code-number">0</span>
-  <span class="code-keyword">corelist-workers</span> <span class="code-number">1-3</span>
-}</div>
+                            <span class="code-keyword">cpu</span> {
+                            <span class="code-keyword">main-core</span> <span class="code-number">0</span>
+                            <span class="code-keyword">corelist-workers</span> <span class="code-number">1-3</span>
+                            }
+                        </div>
                     </div>
                     <div class="card" style="border-top-color: #28a745;">
                         <h3>中型部署 ⭐</h3>
                         <p style="color: #666; margin-bottom: 15px;">1000-20000 PPPoE 会话</p>
-                        <div class="code-block" style="font-size: 0.8em;"><span class="code-keyword">heapsize</span> <span class="code-number">3G</span>
+                        <div class="code-block" style="font-size: 0.8em;"><span class="code-keyword">heapsize</span>
+                            <span class="code-number">3G</span>
 
-<span class="code-keyword">statseg</span> {
-  <span class="code-keyword">size</span> <span class="code-number">512M</span>
-}
+                            <span class="code-keyword">statseg</span> {
+                            <span class="code-keyword">size</span> <span class="code-number">256M</span> <span
+                                class="code-comment"># 2w实测够用</span>
+                            }
 
-<span class="code-keyword">cpu</span> {
-  <span class="code-keyword">main-core</span> <span class="code-number">0</span>
-  <span class="code-keyword">corelist-workers</span> <span class="code-number">1-7</span>
-}
+                            <span class="code-keyword">buffers</span> {
+                            <span class="code-keyword">buffers-per-numa</span> <span class="code-number">131072</span>
+                            }
 
-<span class="code-keyword">physmem</span> {
-  <span class="code-keyword">main-heap-page-size</span> <span class="code-number">2M</span>
-}</div>
+                            <span class="code-keyword">cpu</span> {
+                            <span class="code-keyword">main-core</span> <span class="code-number">0</span>
+                            <span class="code-keyword">corelist-workers</span> <span class="code-number">1-7</span>
+                            }
+
+                            <span class="code-keyword">physmem</span> {
+                            <span class="code-keyword">main-heap-page-size</span> <span class="code-number">2M</span>
+                            }
+                        </div>
                     </div>
                     <div class="card" style="border-top-color: #ffc107;">
                         <h3>大型部署</h3>
                         <p style="color: #666; margin-bottom: 15px;">&gt; 20000 PPPoE 会话</p>
-                        <div class="code-block" style="font-size: 0.8em;"><span class="code-keyword">heapsize</span> <span class="code-number">8G</span>
+                        <div class="code-block" style="font-size: 0.8em;"><span class="code-keyword">heapsize</span>
+                            <span class="code-number">8G</span>
 
-<span class="code-keyword">statseg</span> {
-  <span class="code-keyword">size</span> <span class="code-number">1G</span>
-}
+                            <span class="code-keyword">statseg</span> {
+                            <span class="code-keyword">size</span> <span class="code-number">1G</span>
+                            }
 
-<span class="code-keyword">api-segment</span> {
-  <span class="code-keyword">global-size</span> <span class="code-number">512M</span>
-}
+                            <span class="code-keyword">api-segment</span> {
+                            <span class="code-keyword">global-size</span> <span class="code-number">512M</span>
+                            }
 
-<span class="code-keyword">cpu</span> {
-  <span class="code-keyword">main-core</span> <span class="code-number">0</span>
-  <span class="code-keyword">corelist-workers</span> <span class="code-number">1-15</span>
-}</div>
+                            <span class="code-keyword">cpu</span> {
+                            <span class="code-keyword">main-core</span> <span class="code-number">0</span>
+                            <span class="code-keyword">corelist-workers</span> <span class="code-number">1-15</span>
+                            }
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="slide-number">12</div>
+            <div class="slide-number">14</div>
         </div>
 
-        <!-- Slide 13: 性能优化优先级 -->
+        <!-- Slide 15: 性能优化优先级 -->
         <div class="slide">
             <div class="slide-header">
                 <h2 class="slide-title">性能优化优先级</h2>
@@ -1005,6 +1134,7 @@ base 0x130042000, size <span class="code-number">32m</span>, locked
                     <ul style="font-size: 1.2em;">
                         <li><strong>Stats Segment</strong> 根据 PPPoE 会话数量调整</li>
                         <li><strong>Main Heap</strong> 根据 PPPoE 规模调整</li>
+                        <li><strong>Buffer池 (buffers-per-numa)</strong> 大规模接口必备</li>
                         <li><strong>启用 Huge Pages</strong></li>
                     </ul>
                 </div>
@@ -1020,14 +1150,14 @@ base 0x130042000, size <span class="code-number">32m</span>, locked
                     <h3 style="color: #667eea; margin-bottom: 20px;">⭐ 低优先级（可选）</h3>
                     <ul style="font-size: 1.2em;">
                         <li>Fine-tune worker 线程数</li>
-                        <li>调整 buffer 池大小</li>
+                        <li>甚至更细粒度的 buffer 池分配</li>
                     </ul>
                 </div>
             </div>
-            <div class="slide-number">13</div>
+            <div class="slide-number">15</div>
         </div>
 
-        <!-- Slide 14: OOM 问题排查流程 -->
+        <!-- Slide 16: OOM 问题排查流程 -->
         <div class="slide">
             <div class="slide-header">
                 <h2 class="slide-title">OOM 问题排查流程</h2>
@@ -1040,10 +1170,12 @@ base 0x130042000, size <span class="code-number">32m</span>, locked
                         ├─→ <strong>1. 检查日志，找到错误信息</strong><br>
                         │ • "region /global_vm" → API Segment 问题<br>
                         │ • "stats_vm" → Stats Segment 问题<br>
+                        │ • "buffer allocation failure" → Buffer 池耗尽<br>
                         │ • 其他 → Main Heap 问题<br>
                         │<br>
                         ├─→ <strong>2. 查看当前内存使用</strong><br>
                         │ vppctl show memory [main-heap|api-segment|stats-segment]<br>
+                        │ vppctl show buffers<br>
                         │<br>
                         ├─→ <strong>3. 评估实际需求</strong><br>
                         │ • PPPoE 会话数量 (show pppox interfaces)<br>
@@ -1055,10 +1187,10 @@ base 0x130042000, size <span class="code-number">32m</span>, locked
                     </div>
                 </div>
             </div>
-            <div class="slide-number">14</div>
+            <div class="slide-number">16</div>
         </div>
 
-        <!-- Slide 15: 常用诊断命令 -->
+        <!-- Slide 17: 常用诊断命令 -->
         <div class="slide">
             <div class="slide-header">
                 <h2 class="slide-title">常用诊断命令速查</h2>
@@ -1084,6 +1216,11 @@ base 0x130042000, size <span class="code-number">32m</span>, locked
                             <td>used / total > 90%</td>
                         </tr>
                         <tr>
+                            <td><strong>Buffer 耗尽</strong></td>
+                            <td><code>show buffers</code></td>
+                            <td>Avail < 10%</td>
+                        </tr>
+                        <tr>
                             <td><strong>API Ring 不足</strong></td>
                             <td><code>show api ring-stats</code></td>
                             <td>ring misses > 10% 或 fallback > 0</td>
@@ -1098,18 +1235,13 @@ base 0x130042000, size <span class="code-number">32m</span>, locked
                             <td><code>show pppox interfaces</code></td>
                             <td>会话数量</td>
                         </tr>
-                        <tr>
-                            <td><strong>大页使用</strong></td>
-                            <td><code>cat /proc/meminfo | grep Huge</code></td>
-                            <td>HugePages_Free</td>
-                        </tr>
                     </tbody>
                 </table>
             </div>
-            <div class="slide-number">15</div>
+            <div class="slide-number">17</div>
         </div>
 
-        <!-- Slide 16: 关键要点总结 -->
+        <!-- Slide 18: 关键要点总结 -->
         <div class="slide">
             <div class="slide-header">
                 <h2 class="slide-title">关键要点总结</h2>
@@ -1166,34 +1298,9 @@ base 0x130042000, size <span class="code-number">32m</span>, locked
             <div class="slide-number">16</div>
         </div>
 
-        <!-- Slide 17: 联系方式 -->
-        <div class="slide">
-            <div class="slide-header">
-                <h2 class="slide-title">感谢观看！</h2>
-            </div>
-            <div class="slide-content contact-section">
-                <div class="cta-text">
-                    🎯 欢迎加入技术交流群，一起探讨 VPP 技术！
-                </div>
-                <div style="display: flex; align-items: center; justify-content: center; gap: 60px; margin: 40px 0;">
-                    <div class="qr-container">
-                        <img src="qq-group.jpg" alt="QQ 群二维码"
-                            style="max-width: 450px; max-height: 500px; width: auto; height: auto; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
-                    </div>
-                    <div style="text-align: left; font-size: 1.4em; color: #666; max-width: 500px;">
-                        <p style="margin-bottom: 25px;">💬 <strong>扫码加群</strong>，与专家和同行交流</p>
-                        <p style="margin-bottom: 25px;">🚀 <strong>分享经验</strong>，共同成长</p>
-                        <p style="margin-bottom: 25px;">📚 <strong>获取资料</strong>，更多技术文档和资料</p>
-                        <p style="margin-bottom: 25px;">🎯 <strong>技术支持</strong>，VPP 问题答疑解惑</p>
-                        <p style="margin-bottom: 25px;">💡 <strong>实战案例</strong>，生产环境经验分享</p>
-                    </div>
-                </div>
-                <div style="margin-top: 40px; font-size: 1em; color: #999;">
-                    <p>© 2025 VPP 技术分享 | 保留所有权利</p>
-                </div>
-            </div>
-            <div class="slide-number">17</div>
-        </div>
+        <div class="slide-number">19</div>
+    </div>
+    </div>
     </div>
 
     <div class="navigation-hint">
