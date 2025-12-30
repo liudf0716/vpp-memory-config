@@ -5,7 +5,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VPP Startup.conf 内存配置完全指南</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
     <style>
+        :root {
+            --bg-deep: #0f172a;
+            --bg-accent: #1e293b;
+            --primary: #38bdf8;
+            --primary-glow: rgba(56, 189, 248, 0.4);
+            --secondary: #818cf8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --glass-bg: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -13,16 +33,21 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background-color: var(--bg-deep);
+            background-image:
+                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(129, 140, 248, 0.15) 0px, transparent 50%);
             overflow: hidden;
-            color: #333;
+            color: var(--text-main);
+            height: 100vh;
         }
 
         .presentation {
             width: 100vw;
             height: 100vh;
             position: relative;
+            perspective: 1000px;
         }
 
         .slide {
@@ -30,297 +55,238 @@
             width: 100%;
             height: 100%;
             display: none;
-            padding: 60px 80px;
-            background: white;
+            padding: 5% 8%;
             opacity: 0;
-            transition: opacity 0.5s ease-in-out;
+            transform: translateX(30px);
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            flex-direction: column;
+            justify-content: center;
         }
 
         .slide.active {
             display: flex;
-            flex-direction: column;
-            justify-content: center;
             opacity: 1;
+            transform: translateX(0);
         }
 
         .slide-header {
-            text-align: center;
-            margin-bottom: 40px;
+            text-align: left;
+            margin-bottom: 3rem;
+            border-left: 6px solid var(--primary);
+            padding-left: 2rem;
+            animation: slideInLeft 0.8s ease-out;
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-50px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
         }
 
         .slide-title {
-            font-size: 3.5em;
-            font-weight: 700;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-size: 3.8rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            background: linear-gradient(to right, #fff, var(--primary));
             -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
             background-clip: text;
-            margin-bottom: 20px;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
         }
 
         .slide-subtitle {
-            font-size: 1.8em;
-            color: #666;
-            font-weight: 300;
+            font-size: 1.8rem;
+            color: var(--text-dim);
+            font-weight: 400;
         }
 
         .slide-content {
             flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            font-size: 1.3em;
-            line-height: 1.8;
+            font-size: 1.25rem;
+            line-height: 1.7;
+            animation: fadeIn 1s ease-out 0.3s both;
         }
 
-        .slide-footer {
-            text-align: center;
-            padding: 20px 0;
-            color: #999;
-            font-size: 0.9em;
-            border-top: 1px solid #eee;
-            margin-top: auto;
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .slide-number {
             position: absolute;
-            bottom: 30px;
-            right: 40px;
-            font-size: 1.2em;
-            color: #999;
-            font-weight: 600;
+            bottom: 40px;
+            right: 50px;
+            font-size: 1.2rem;
+            color: var(--text-dim);
+            font-family: 'JetBrains Mono', monospace;
+            opacity: 0.5;
+        }
+
+        /* Glassmorphism Components */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2.5rem;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
         }
 
         .code-block {
-            background: #1e1e1e;
-            color: #d4d4d4;
-            padding: 25px;
+            background: #0b0f1a;
+            border: 1px solid var(--glass-border);
+            color: #e2e8f0;
+            padding: 1.5rem;
             border-radius: 12px;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 0.9em;
-            margin: 20px 0;
-            overflow-x: auto;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            white-space: pre-wrap;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+            margin: 1.5rem 0;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .code-block::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--primary);
         }
 
         .code-comment {
-            color: #6a9955;
+            color: #64748b;
+            font-style: italic;
         }
 
         .code-keyword {
-            color: #569cd6;
+            color: var(--primary);
+            font-weight: 600;
         }
 
         .code-string {
-            color: #ce9178;
+            color: var(--success);
         }
 
         .code-number {
-            color: #b5cea8;
+            color: #f472b6;
         }
 
         .highlight-box {
-            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
-            padding: 25px;
-            border-radius: 12px;
-            border-left: 5px solid #667eea;
-            margin: 20px 0;
+            background: rgba(56, 189, 248, 0.1);
+            border-left: 4px solid var(--primary);
+            padding: 1.5rem;
+            border-radius: 0 12px 12px 0;
+            margin: 1.2rem 0;
         }
 
         .warning-box {
-            background: #fff3cd;
-            border-left: 5px solid #ffc107;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 20px 0;
+            background: rgba(245, 158, 11, 0.1);
+            border-left: 4px solid var(--warning);
+            padding: 1.5rem;
+            border-radius: 0 12px 12px 0;
+            margin: 1.2rem 0;
         }
 
         .error-box {
-            background: #f8d7da;
-            border-left: 5px solid #dc3545;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 20px 0;
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 4px solid var(--error);
+            padding: 1.5rem;
+            border-radius: 0 12px 12px 0;
+            margin: 1.2rem 0;
         }
 
         .success-box {
-            background: #d4edda;
-            border-left: 5px solid #28a745;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 20px 0;
+            background: rgba(16, 185, 129, 0.1);
+            border-left: 4px solid var(--success);
+            padding: 1.5rem;
+            border-radius: 0 12px 12px 0;
+            margin: 1.2rem 0;
         }
 
         .two-columns {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 40px;
-            margin: 20px 0;
-        }
-
-        .three-columns {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 30px;
-            margin: 20px 0;
-        }
-
-        .card {
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            border-top: 4px solid #667eea;
-        }
-
-        .card h3 {
-            color: #667eea;
-            margin-bottom: 15px;
-            font-size: 1.4em;
+            gap: 2.5rem;
+            align-items: center;
         }
 
         ul {
             list-style: none;
-            padding-left: 0;
         }
 
         ul li {
-            padding: 10px 0 10px 30px;
+            padding: 0.7rem 0 0.7rem 2rem;
             position: relative;
+            transition: transform 0.2s ease;
+        }
+
+        ul li:hover {
+            transform: translateX(8px);
         }
 
         ul li:before {
-            content: "▸";
+            content: "→";
             position: absolute;
             left: 0;
-            color: #667eea;
-            font-weight: bold;
-            font-size: 1.2em;
-        }
-
-        .emphasis {
-            color: #667eea;
-            font-weight: 600;
-        }
-
-        .big-number {
-            font-size: 4em;
-            font-weight: 700;
-            color: #667eea;
-            text-align: center;
-            margin: 20px 0;
+            color: var(--primary);
+            font-weight: 800;
         }
 
         table {
             width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-            font-size: 0.95em;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 2rem 0;
+            background: var(--glass-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
         }
 
         th {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 15px;
+            background: rgba(56, 189, 248, 0.1);
+            color: var(--primary);
+            padding: 1.2rem;
             text-align: left;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--glass-border);
         }
 
         td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #eee;
+            padding: 1rem 1.2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: #e2e8f0;
         }
 
-        tr:hover {
-            background: #f5f5f5;
+        tr:last-child td {
+            border-bottom: none;
         }
 
-        .architecture-diagram {
-            background: #f8f9fa;
-            padding: 30px;
-            border-radius: 12px;
-            margin: 20px 0;
-            border: 2px solid #667eea;
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.03);
         }
 
-        .memory-block {
-            background: white;
-            border: 2px solid #667eea;
-            border-radius: 8px;
-            padding: 15px;
-            margin: 10px 0;
-            text-align: center;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .memory-block-title {
-            font-weight: 700;
-            color: #667eea;
-            font-size: 1.2em;
-            margin-bottom: 8px;
-        }
-
-        .memory-block-size {
-            color: #28a745;
-            font-weight: 600;
-        }
-
-        .formula {
-            background: #f0f0f0;
-            padding: 20px;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            font-size: 1.1em;
-            text-align: center;
-            margin: 20px 0;
-            border: 2px dashed #667eea;
-        }
-
-        .contact-section {
-            text-align: center;
-            padding: 40px;
-        }
-
-        .qr-container {
-            display: inline-block;
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-            margin: 20px;
-        }
-
-        .qr-placeholder {
-            width: 300px;
-            height: 300px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 1.5em;
-            font-weight: 600;
-        }
-
-        .cta-text {
-            font-size: 1.8em;
-            color: #667eea;
-            font-weight: 600;
-            margin: 30px 0;
-        }
-
-        .navigation-hint {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 10px 25px;
-            border-radius: 20px;
-            font-size: 0.9em;
-            z-index: 1000;
+        .slide.active .slide-content>* {
+            animation: fadeInUp 0.6s ease-out both;
         }
 
         @keyframes fadeInUp {
@@ -335,10 +301,6 @@
             }
         }
 
-        .slide.active .slide-content>* {
-            animation: fadeInUp 0.6s ease-out;
-        }
-
         .icon {
             font-size: 1.2em;
             margin-right: 8px;
@@ -349,9 +311,10 @@
             top: 0;
             left: 0;
             height: 4px;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-            transition: width 0.3s ease;
-            z-index: 1000;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+            box-shadow: 0 0 15px var(--primary-glow);
+            transition: width 0.4s cubic-bezier(0.17, 0.67, 0.83, 0.67);
+            z-index: 1001;
         }
     </style>
 </head>
@@ -363,15 +326,18 @@
         <!-- Slide 1: Title -->
         <div class="slide active">
             <div class="slide-content" style="text-align: center;">
-                <h1 class="slide-title" style="font-size: 4.5em; margin-bottom: 30px;">
-                    VPP Startup.conf<br>内存配置完全指南
-                </h1>
-                <p class="slide-subtitle" style="font-size: 2em; margin-bottom: 40px;">
-                    以大规模 PPPoE 拨号场景为例，深入理解 VPP 内存架构与性能优化
-                </p>
-                <div style="margin-top: 60px;">
-                    <p style="font-size: 1.5em; color: #666;">技术分享</p>
-                    <p style="font-size: 1.2em; color: #999; margin-top: 10px;">2025-12-22</p>
+                <div class="glass-card"
+                    style="display: inline-block; padding: 4rem 6rem; border: 2px solid var(--primary);">
+                    <h1 class="slide-title" style="font-size: 4.8rem; margin-bottom: 2rem; line-height: 1.1;">
+                        VPP Startup.conf<br><span style="color: var(--secondary);">内存配置全解析</span>
+                    </h1>
+                    <p class="slide-subtitle" style="font-size: 2rem; color: var(--text-dim); margin-bottom: 3rem;">
+                        20,000 PPPoE 真实案例驱动
+                    </p>
+                    <div
+                        style="height: 2px; background: linear-gradient(to right, transparent, var(--primary), transparent); margin: 3rem 0;">
+                    </div>
+                    <p style="font-size: 1.4rem; font-weight: 500; color: var(--primary);">深度性能优化 | 生产级配置指南</p>
                 </div>
             </div>
             <div class="slide-number">1</div>
@@ -384,25 +350,25 @@
             </div>
             <div class="slide-content">
                 <div class="three-columns">
-                    <div class="card">
-                        <h3>📋 基础篇</h3>
-                        <ul>
+                    <div class="glass-card">
+                        <h3 style="color: var(--primary); margin-bottom: 1.5rem;">📋 基础篇</h3>
+                        <ul style="font-size: 1.1rem;">
                             <li>VPP 内存架构概览</li>
                             <li>内存分类与用途</li>
                             <li>Main Heap 详解</li>
                         </ul>
                     </div>
-                    <div class="card">
-                        <h3>⚠️ 核心篇</h3>
-                        <ul>
-                            <li>Stats Segment（重点）</li>
+                    <div class="glass-card">
+                        <h3 style="color: var(--secondary); margin-bottom: 1.5rem;">⚠️ 核心篇</h3>
+                        <ul style="font-size: 1.1rem;">
+                            <li>Stats Segment (重点)</li>
                             <li>API Segment 配置</li>
                             <li>PPPoE 场景优化</li>
                         </ul>
                     </div>
-                    <div class="card">
-                        <h3>🚀 实战篇</h3>
-                        <ul>
+                    <div class="glass-card">
+                        <h3 style="color: var(--success); margin-bottom: 1.5rem;">🚀 实战篇</h3>
+                        <ul style="font-size: 1.1rem;">
                             <li>2万 PPPoE 案例分析</li>
                             <li>性能优化建议</li>
                             <li>问题排查流程</li>
@@ -419,28 +385,32 @@
                 <h2 class="slide-title">VPP 内存架构全景图</h2>
             </div>
             <div class="slide-content">
-                <div class="architecture-diagram">
-                    <div class="memory-block" style="border-color: #dc3545;">
-                        <div class="memory-block-title" style="color: #dc3545;">🔥 Main Heap (heapsize)</div>
-                        <div>主线程 + Worker 线程内存</div>
-                        <div>路由表、PPPoE 会话、虚拟接口</div>
-                        <div class="memory-block-size" style="color: #dc3545;">⚠️ 重压力下最易 OOM！建议 2G-3G+</div>
-                    </div>
-                    <div class="memory-block">
-                        <div class="memory-block-title">📊 Stats Segment (statseg)</div>
-                        <div>PPPoE 接口统计计数器</div>
-                        <div>2w PPPoE 约需 256M</div>
-                        <div class="memory-block-size">默认：32M（需根据规模调整）</div>
-                    </div>
-                    <div class="memory-block">
-                        <div class="memory-block-title">📡 API Segment (api-segment)</div>
-                        <div>API 消息队列、PPPoE 管控通信</div>
-                        <div class="memory-block-size">默认：global-size 64M, pvt-heap 128KB</div>
-                    </div>
-                    <div class="memory-block">
-                        <div class="memory-block-title">🔧 Per-NUMA Heaps</div>
-                        <div>NUMA 架构优化、本地内存访问</div>
-                        <div class="memory-block-size">按系统配置</div>
+                <div class="glass-card" style="border: 1px solid var(--primary);">
+                    <div class="two-columns">
+                        <div>
+                            <div class="error-box" style="margin-bottom: 2rem;">
+                                <h3 style="color: var(--error); margin-bottom: 1rem;">🔥 Main Heap (heapsize)</h3>
+                                <p style="font-size: 1.1rem;">主线程 + Worker 线程内存。存放路由表、PPPoE 会话、虚拟接口。重压力下最易 OOM！建议
+                                    <strong>2G-3G+</strong>
+                                </p>
+                            </div>
+                            <div class="highlight-box">
+                                <h3 style="color: var(--primary); margin-bottom: 1rem;">📊 Stats Segment (statseg)</h3>
+                                <p style="font-size: 1.1rem;">PPPoE 接口统计计数器。2w PPPoE 约需 <strong>256M</strong> (默认 32M
+                                    极易溢出)。</p>
+                            </div>
+                        </div>
+                        <div class="architecture-diagram"
+                            style="font-size: 0.9rem; line-height: 1.5; color: var(--secondary);">
+                            ┌───────────────────────────────┐<br>
+                            │ VPP Process (Huge Pages) │<br>
+                            ├───────┬───────┬───────┬───────┤<br>
+                            │ Main │ Stats │ API │ Buffer│<br>
+                            │ Heap │ Seg │ Seg │ Pool │<br>
+                            ├───────┼───────┼───────┼───────┤<br>
+                            │ R/W │ R/O │ Ring │ HW │<br>
+                            └───────┴───────┴───────┴───────┘
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1051,126 +1021,123 @@
 
 
 
-        <!-- Slide 14: 性能优化优先级 -->
         <div class="slide">
             <div class="slide-header">
                 <h2 class="slide-title">性能优化优先级</h2>
             </div>
             <div class="slide-content">
-                <div class="highlight-box"
-                    style="background: linear-gradient(135deg, #dc354515 0%, #dc354515 100%); border-left-color: #dc3545;">
-                    <h3 style="color: #dc3545; margin-bottom: 20px;">⭐⭐⭐ 高优先级（必须做）</h3>
-                    <ul style="font-size: 1.2em;">
-                        <li><strong>Stats Segment</strong> 根据 PPPoE 会话数量调整</li>
-                        <li><strong>Main Heap</strong> 根据 PPPoE 规模调整</li>
-                        <li><strong>Buffer池 (buffers-per-numa)</strong> 大规模接口必备</li>
-                        <li><strong>启用 Huge Pages</strong></li>
-                    </ul>
-                </div>
-                <div class="highlight-box"
-                    style="background: linear-gradient(135deg, #ffc10715 0%, #ffc10715 100%); border-left-color: #ffc107; margin-top: 30px;">
-                    <h3 style="color: #ffc107; margin-bottom: 20px;">⭐⭐ 中优先级（推荐做）</h3>
-                    <ul style="font-size: 1.2em;">
-                        <li><strong>NUMA 亲和性</strong>配置</li>
-                        <li><strong>API Segment</strong>（高频 PPPoE 管控场景）</li>
-                    </ul>
-                </div>
-                <div class="highlight-box" style="margin-top: 30px;">
-                    <h3 style="color: #667eea; margin-bottom: 20px;">⭐ 低优先级（可选）</h3>
-                    <ul style="font-size: 1.2em;">
-                        <li>Fine-tune worker 线程数</li>
-                        <li>甚至更细粒度的 buffer 池分配</li>
-                    </ul>
+                <div class="two-columns">
+                    <div class="glass-card" style="border-left: 6px solid var(--error);">
+                        <h3 style="color: var(--error); margin-bottom: 25px;">🔥🔥🔥 高优先级</h3>
+                        <ul style="font-size: 1.3rem;">
+                            <li><strong>Stats Segment</strong> 规模调整</li>
+                            <li><strong>Main Heap</strong> 规模调整</li>
+                            <li><strong>Buffer Pool</strong> (2w接口必备)</li>
+                            <li><strong>Huge Pages</strong> 启用</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <div class="glass-card" style="border-left: 6px solid var(--warning); margin-bottom: 2rem;">
+                            <h3 style="color: var(--warning); margin-bottom: 15px;">⭐⭐ 中优先级</h3>
+                            <ul style="font-size: 1.1rem;">
+                                <li><strong>NUMA</strong> 亲和性硬绑定</li>
+                                <li><strong>API Segment</strong> 环状缓冲区</li>
+                            </ul>
+                        </div>
+                        <div class="glass-card" style="border-left: 6px solid var(--primary);">
+                            <h3 style="color: var(--primary); margin-bottom: 15px;">⭐ 低优先级</h3>
+                            <ul style="font-size: 1.1rem;">
+                                <li>Worker 线程精细化分配</li>
+                                <li>Buffer 分配步长微调</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="slide-number">14</div>
         </div>
 
-        <!-- Slide 15: OOM 问题排查流程 -->
         <div class="slide">
             <div class="slide-header">
                 <h2 class="slide-title">OOM 问题排查流程</h2>
             </div>
             <div class="slide-content">
-                <div class="architecture-diagram">
-                    <div style="font-family: monospace; font-size: 1.15em; line-height: 2;">
-                        <strong style="color: #dc3545;">VPP OOM 崩溃</strong><br>
-                        │<br>
-                        ├─→ <strong>1. 检查日志，找到错误信息</strong><br>
-                        │ • "region /global_vm" → API Segment 问题<br>
-                        │ • "stats_vm" → Stats Segment 问题<br>
-                        │ • "buffer allocation failure" → Buffer 池耗尽<br>
-                        │ • 其他 → Main Heap 问题<br>
-                        │<br>
-                        ├─→ <strong>2. 查看当前内存使用</strong><br>
-                        │ vppctl show memory [main-heap|api-segment|stats-segment]<br>
-                        │ vppctl show buffers<br>
-                        │<br>
-                        ├─→ <strong>3. 评估实际需求</strong><br>
-                        │ • PPPoE 会话数量 (show pppox interfaces)<br>
-                        │ • 路由表规模 (show ip fib summary)<br>
-                        │ • API 调用频率 (show api ring-stats)<br>
-                        │<br>
-                        └─→ <strong>4. 调整配置并重启</strong><br>
-                        修改 startup.conf → 重启 VPP
+                <div class="glass-card" style="max-width: 900px; margin: 0 auto; border: 1px solid var(--secondary);">
+                    <div style="font-family: 'JetBrains Mono', monospace; font-size: 1.3rem; line-height: 2.2;">
+                        <strong style="color: var(--error); font-size: 1.6rem;">VPP Crash (OOM)</strong><br>
+                        <span style="color: var(--text-dim);">│</span><br>
+                        <span style="color: var(--text-dim);">├─→</span> <kbd>1</kbd> <strong>内核日志分析</strong><br>
+                        <span style="color: var(--text-dim);">│</span> &nbsp; &nbsp; <small
+                            style="color: var(--primary);">Searching for "region /global_vm", "stats_vm"</small><br>
+                        <span style="color: var(--text-dim);">│</span><br>
+                        <span style="color: var(--text-dim);">├─→</span> <kbd>2</kbd> <strong>快照内存状态</strong><br>
+                        <span style="color: var(--text-dim);">│</span> &nbsp; &nbsp; <code
+                            style="color: var(--warning);">vppctl show memory [main|stats|api]</code><br>
+                        <span style="color: var(--text-dim);">│</span><br>
+                        <span style="color: var(--text-dim);">├─→</span> <kbd>3</kbd> <strong>评估业务拓扑</strong><br>
+                        <span style="color: var(--text-dim);">│</span> &nbsp; &nbsp; <small
+                            style="color: var(--success);">Session count (2w), Route scale, API frequency</small><br>
+                        <span style="color: var(--text-dim);">│</span><br>
+                        <span style="color: var(--text-dim);">└─→</span> <kbd>4</kbd> <strong>垂直扩容 + 预留</strong><br>
+                        &nbsp; &nbsp; &nbsp; <span style="color: var(--primary);">调整 startup.conf -> 重启验证</span>
                     </div>
                 </div>
             </div>
             <div class="slide-number">15</div>
         </div>
 
-        <!-- Slide 16: 常用诊断命令 -->
         <div class="slide">
             <div class="slide-header">
                 <h2 class="slide-title">常用诊断命令速查</h2>
             </div>
             <div class="slide-content">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>问题类型</th>
-                            <th>诊断命令</th>
-                            <th>关键指标</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><strong>内存不足</strong></td>
-                            <td><code>show memory main-heap</code></td>
-                            <td>used / total > 80%</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Stats OOM</strong></td>
-                            <td><code>show memory stats-segment</code></td>
-                            <td>used / total > 90%</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Buffer 耗尽</strong></td>
-                            <td><code>show buffers</code></td>
-                            <td>Avail < 10%</td>
-                        </tr>
-                        <tr>
-                            <td><strong>API Ring 不足</strong></td>
-                            <td><code>show api ring-stats</code></td>
-                            <td>ring misses > 10% 或 fallback > 0</td>
-                        </tr>
-                        <tr>
-                            <td><strong>NUMA 问题</strong></td>
-                            <td><code>show memory numa-heaps</code></td>
-                            <td>跨节点访问</td>
-                        </tr>
-                        <tr>
-                            <td><strong>PPPoE 会话数</strong></td>
-                            <td><code>show pppox interfaces</code></td>
-                            <td>会话数量</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="glass-card" style="padding: 1.5rem;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>问题类型</th>
+                                <th>诊断命令</th>
+                                <th>关键指标</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>内存不足</strong></td>
+                                <td><code>show memory main-heap</code></td>
+                                <td style="color: var(--secondary);">used / total > 80%</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Stats OOM</strong></td>
+                                <td><code>show memory stats-segment</code></td>
+                                <td style="color: var(--secondary);">used / total > 90%</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Buffer 耗尽</strong></td>
+                                <td><code>show buffers</code></td>
+                                <td style="color: var(--secondary);">Avail < 10%</td>
+                            </tr>
+                            <tr>
+                                <td><strong>API Ring 不足</strong></td>
+                                <td><code>show api ring-stats</code></td>
+                                <td style="color: var(--secondary);">ring misses > 10%</td>
+                            </tr>
+                            <tr>
+                                <td><strong>NUMA 问题</strong></td>
+                                <td><code>show memory numa-heaps</code></td>
+                                <td style="color: var(--secondary);">跨节点访问</td>
+                            </tr>
+                            <tr>
+                                <td><strong>PPPoE 会话数</strong></td>
+                                <td><code>show pppox interfaces</code></td>
+                                <td style="color: var(--secondary);">20,000 (RUNNING)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
             <div class="slide-number">16</div>
         </div>
 
-        <!-- Slide 17: 关键要点总结 -->
         <div class="slide">
             <div class="slide-header">
                 <h2 class="slide-title">关键要点总结</h2>
@@ -1178,48 +1145,34 @@
             <div class="slide-content">
                 <div class="two-columns">
                     <div>
-                        <div class="error-box">
-                            <h3 style="margin-bottom: 15px;">🔥 最易 OOM：Main Heap</h3>
-                            <ul style="font-size: 1.1em;">
-                                <li>压力大时最容易崩溃</li>
-                                <li>PPPoE 会话 > 1w 需 2G-3G</li>
-                                <li>建议根据业务规模大幅预留</li>
+                        <div class="glass-card" style="border-top: 4px solid var(--error); margin-bottom: 2rem;">
+                            <h3 style="color: var(--error); margin-bottom: 1rem;">🔥 核心结论</h3>
+                            <ul style="font-size: 1.1rem;">
+                                <li><strong>Main Heap</strong> 是最脆弱的环节，2w 接口建议 3G+。</li>
+                                <li><strong>Stats Seg</strong> 32M 默认值在大规模场景必满，建议 256M。</li>
+                                <li><strong>Buffers</strong> 并不是只带流量才扣，大规模接口预占严重。</li>
                             </ul>
                         </div>
-                        <div class="highlight-box" style="margin-top: 30px;">
-                            <h3 style="margin-bottom: 15px;">📊 Stats Segment 按规模调整</h3>
-                            <ul style="font-size: 1.1em;">
-                                <li>&lt; 5k 会话：建议 64M</li>
-                                <li>5k-10k 会话：建议 128M</li>
-                                <li>10k-20k 会话：建议 256M</li>
-                            </ul>
-                        </div>
-                        <div class="success-box" style="margin-top: 30px;">
-                            <h3 style="margin-bottom: 15px;">✅ 推荐参数速记</h3>
-                            <ul style="font-size: 1.1em;">
-                                <li>&lt; 5k 会话：2G Heap / 64M Stats</li>
-                                <li>5k-10k 会话：2G Heap / 128M Stats</li>
-                                <li>10k-20k 会话：3G Heap / 256M Stats</li>
-                            </ul>
+                        <div class="glass-card" style="border-top: 4px solid var(--success);">
+                            <h3 style="color: var(--success); margin-bottom: 1rem;">✅ 推荐参数 (2w会话)</h3>
+                            <div class="code-block" style="font-size: 0.9rem; margin-bottom: 0;">
+                                main-heap-size 3G<br>
+                                statseg { size 256M }<br>
+                                buffers { buffers-per-numa 131072 }
+                            </div>
                         </div>
                     </div>
                     <div>
-                        <div class="highlight-box">
-                            <h3 style="margin-bottom: 15px;">🔧 API Segment 按需配置</h3>
-                            <ul style="font-size: 1.1em;">
-                                <li>低频使用：默认即可</li>
-                                <li>高频 API：api-size 64M, global-size 128M</li>
-                                <li>api-queue length 可增至 4096</li>
-                                <li>监控 ring misses，> 10% 需优化</li>
+                        <div class="glass-card" style="border-top: 4px solid var(--primary); margin-bottom: 2rem;">
+                            <h3 style="color: var(--primary); margin-bottom: 1rem;">🔧 进阶优化</h3>
+                            <ul style="font-size: 1.1rem;">
+                                <li>API Segment 默认 64M/128M 组合通常够用。</li>
+                                <li>NUMA 亲和性绑定可提升 10-20% 吞吐。</li>
+                                <li>启用 2M/1G 大页是现代 VPP 性能基石。</li>
                             </ul>
                         </div>
-                        <div class="warning-box" style="margin-top: 30px;">
-                            <h3 style="margin-bottom: 15px;">⚡ NUMA 优化很重要</h3>
-                            <ul style="font-size: 1.1em;">
-                                <li>避免跨节点访问</li>
-                                <li>启用大页（2M page size）</li>
-                                <li>性能提升 10-20%</li>
-                            </ul>
+                        <div class="glass-card" style="text-align: center; border-top: 4px solid var(--secondary);">
+                            <p style="font-size: 1.2rem; color: var(--text-dim);">"内存是 VPP 的血液，合理的预留是稳定性的终极保障。"</p>
                         </div>
                     </div>
                 </div>
@@ -1227,30 +1180,31 @@
             <div class="slide-number">17</div>
         </div>
 
-        <!-- Slide 18: 联系方式 -->
         <div class="slide">
             <div class="slide-header">
                 <h2 class="slide-title">感谢观看！</h2>
             </div>
             <div class="slide-content contact-section">
-                <div class="cta-text">
-                    🎯 欢迎加入技术交流群，一起探讨 VPP 技术！
-                </div>
-                <div style="display: flex; align-items: center; justify-content: center; gap: 60px; margin: 40px 0;">
-                    <div class="qr-container">
-                        <img src="qq-group.jpg" alt="QQ 群二维码"
-                            style="max-width: 450px; max-height: 500px; width: auto; height: auto; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                <div class="glass-card" style="display: inline-block; padding: 3rem 5rem;">
+                    <div
+                        style="font-size: 2.2rem; font-weight: 800; margin-bottom: 2rem; background: linear-gradient(to right, var(--primary), var(--secondary)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">
+                        🎯 欢迎加入技术交流群
                     </div>
-                    <div style="text-align: left; font-size: 1.4em; color: #666; max-width: 500px;">
-                        <p style="margin-bottom: 25px;">💬 <strong>扫码加群</strong>，与专家和同行交流</p>
-                        <p style="margin-bottom: 25px;">🚀 <strong>分享经验</strong>，共同成长</p>
-                        <p style="margin-bottom: 25px;">📚 <strong>获取资料</strong>，更多技术文档和资料</p>
-                        <p style="margin-bottom: 25px;">🎯 <strong>技术支持</strong>，VPP 问题答疑解惑</p>
-                        <p style="margin-bottom: 25px;">💡 <strong>实战案例</strong>，生产环境经验分享</p>
+                    <div class="two-columns">
+                        <div class="qr-container">
+                            <img src="qq-group.jpg" alt="QQ 群二维码"
+                                style="max-width: 350px; border-radius: 20px; box-shadow: 0 0 30px rgba(56, 189, 248, 0.2);">
+                        </div>
+                        <div style="text-align: left; line-height: 2.2; font-size: 1.4rem;">
+                            <p>💬 <strong>扫码加群</strong> | 与专家同行</p>
+                            <p>🚀 <strong>分享经验</strong> | 共同成长</p>
+                            <p>📚 <strong>获取资料</strong> | 文档/配置</p>
+                            <p>🎯 <strong>技术支持</strong> | 疑难解答</p>
+                        </div>
                     </div>
                 </div>
-                <div style="margin-top: 40px; font-size: 1em; color: #999;">
-                    <p>© 2025 VPP 技术分享 | 保留所有权利</p>
+                <div style="margin-top: 4rem; color: var(--text-dim); font-size: 1rem;">
+                    © 2025 VPP 技术分享 | 专业 · 深度 · 极客
                 </div>
             </div>
             <div class="slide-number">18</div>
