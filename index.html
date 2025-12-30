@@ -367,7 +367,7 @@
                     VPP Startup.conf<br>内存配置完全指南
                 </h1>
                 <p class="slide-subtitle" style="font-size: 2em; margin-bottom: 40px;">
-                    深入理解 VPP 内存架构与性能优化
+                    以大规模 PPPoE 拨号场景为例，深入理解 VPP 内存架构与性能优化
                 </p>
                 <div style="margin-top: 60px;">
                     <p style="font-size: 1.5em; color: #666;">技术分享</p>
@@ -397,13 +397,13 @@
                         <ul>
                             <li>Stats Segment（重点）</li>
                             <li>API Segment 配置</li>
-                            <li>NUMA 优化</li>
+                            <li>PPPoE 场景优化</li>
                         </ul>
                     </div>
                     <div class="card">
                         <h3>🚀 实战篇</h3>
                         <ul>
-                            <li>真实案例分析</li>
+                            <li>2万 PPPoE 案例分析</li>
                             <li>性能优化建议</li>
                             <li>问题排查流程</li>
                         </ul>
@@ -423,18 +423,18 @@
                     <div class="memory-block" style="border-color: #dc3545;">
                         <div class="memory-block-title" style="color: #dc3545;">🔥 Main Heap (heapsize)</div>
                         <div>主线程 + Worker 线程内存</div>
-                        <div>路由表、IPsec 隧道、虚拟接口</div>
+                        <div>路由表、PPPoE 会话、虚拟接口</div>
                         <div class="memory-block-size" style="color: #dc3545;">⚠️ 重压力下最易 OOM！建议 2G-3G+</div>
                     </div>
                     <div class="memory-block">
                         <div class="memory-block-title">📊 Stats Segment (statseg)</div>
-                        <div>接口统计计数器</div>
-                        <div>1w 接口约需 64M</div>
-                        <div class="memory-block-size">默认：32M（正常够用）</div>
+                        <div>PPPoE 接口统计计数器</div>
+                        <div>2w PPPoE 约需 256M</div>
+                        <div class="memory-block-size">默认：32M（需根据规模调整）</div>
                     </div>
                     <div class="memory-block">
                         <div class="memory-block-title">📡 API Segment (api-segment)</div>
-                        <div>API 消息队列、VPP ↔ 客户端通信</div>
+                        <div>API 消息队列、PPPoE 管控通信</div>
                         <div class="memory-block-size">默认：global-size 64M, pvt-heap 128KB</div>
                     </div>
                     <div class="memory-block">
@@ -468,14 +468,14 @@
                             <td><strong>Main Heap</strong></td>
                             <td><code>heapsize</code></td>
                             <td>1G</td>
-                            <td>路由、隧道、接口</td>
+                            <td>路由、PPPoE会话、接口</td>
                             <td style="color: #dc3545; font-weight: 700;">🔥 高 (重压易 OOM)</td>
                         </tr>
                         <tr>
                             <td><strong>Stats Segment</strong></td>
                             <td><code>statseg { size }</code></td>
                             <td>32M</td>
-                            <td>接口统计</td>
+                            <td>PPPoE 接口统计</td>
                             <td style="color: #ffc107;">⚠️ 中 (大量统计易 OOM)</td>
                         </tr>
                         <tr>
@@ -520,8 +520,8 @@
                         <h3 style="color: #667eea; margin: 30px 0 20px;">用途</h3>
                         <ul>
                             <li>FIB/LPM 路由表</li>
+                            <li>PPPoE 会话状态</li>
                             <li>ARP/ND 表</li>
-                            <li>TCP/UDP 连接表</li>
                             <li>接口数据结构</li>
                             <li>插件元数据和控制结构</li>
                         </ul>
@@ -537,9 +537,9 @@
                         </div>
                         <h3 style="color: #667eea; margin: 30px 0 20px;">推荐配置</h3>
                         <div class="success-box">
-                            <strong>轻量级(接口<1k)：< /strong> 1-2G<br>
-                                    <strong>中大规模(接口/IPsec隧道 > 1w)：</strong> 2-3G<br>
-                                    <strong>超大规模/高吞吐：</strong> 4-8G 或更高
+                            <strong>轻量级(PPPoE<1k)：</strong> 1-2G<br>
+                            <strong>中大规模(PPPoE 1k-2w)：</strong> 2-3G<br>
+                            <strong>超大规模(PPPoE>2w)：</strong> 4-8G 或更高
                         </div>
                         <h3 style="color: #667eea; margin: 30px 0 20px;">监控命令</h3>
                         <div class="code-block">
@@ -555,19 +555,19 @@
         <!-- Slide 6: Main Heap 和 Stats Segment 的 OOM 场景 -->
         <div class="slide">
             <div class="slide-header">
-                <h2 class="slide-title">🔥 大规模部署的内存挑战</h2>
+                <h2 class="slide-title">🔥 大规模 PPPoE 部署的内存挑战</h2>
             </div>
             <div class="slide-content">
                 <div class="two-columns">
                     <div>
                         <div class="error-box" style="margin-bottom: 20px;">
                             <h3 style="margin-bottom: 15px;">Main Heap (默认 1G)</h3>
-                            <p>大量 IPsec 隧道、路由表时易 OOM</p>
+                            <p>大量 PPPoE 会话、路由表时易 OOM</p>
                         </div>
                         <table style="font-size: 0.9em;">
                             <thead>
                                 <tr>
-                                    <th>IPsec/接口规模</th>
+                                    <th>PPPoE 会话规模</th>
                                     <th>建议 heapsize</th>
                                 </tr>
                             </thead>
@@ -594,12 +594,12 @@
                     <div>
                         <div class="warning-box" style="margin-bottom: 20px;">
                             <h3 style="margin-bottom: 15px;">Stats Segment (默认 32M)</h3>
-                            <p>大量接口统计时易 OOM</p>
+                            <p>大量 PPPoE 接口统计时易 OOM</p>
                         </div>
                         <table style="font-size: 0.9em;">
                             <thead>
                                 <tr>
-                                    <th>接口数量</th>
+                                    <th>PPPoE 会话数量</th>
                                     <th>建议 statseg size</th>
                                 </tr>
                             </thead>
@@ -639,30 +639,30 @@
                     <ul style="font-size: 1.1em;">
                         <li><strong>简单计数器 (counter_t)</strong>：8 字节/计数器</li>
                         <li><strong>组合计数器 (vlib_counter_t)</strong>：16 字节/计数器 (packets + bytes)</li>
-                        <li>每个接口有多个计数器 (rx/tx packets, bytes, drops, errors 等)</li>
+                        <li>每个 PPPoE 接口有多个计数器 (rx/tx packets, bytes, drops, errors 等)</li>
                     </ul>
                 </div>
                 <div class="formula" style="font-size: 1.3em; margin-bottom: 40px;">
-                    经验公式：Stats Segment ≈ 基础开销 + (接口数 × 线程数 × ~500 字节)
+                    经验公式：Stats Segment ≈ 基础开销 + (PPPoE会话数 × 线程数 × ~500 字节)
                 </div>
                 <h3 style="color: #667eea; margin: 30px 0 20px; text-align: center;">推荐配置</h3>
                 <div class="three-columns">
                     <div class="card">
-                        <h3>&lt; 1,000 接口</h3>
+                        <h3>&lt; 1,000 PPPoE</h3>
                         <div class="code-block">
 statseg {
     size <span class="code-number">32M</span> <span class="code-comment"># 默认</span>
 }</div>
                     </div>
                     <div class="card" style="border-top-color: #28a745;">
-                        <h3>1,000 - 10,000 接口</h3>
+                        <h3>1,000 - 10,000 PPPoE</h3>
                         <div class="code-block">
 statseg {
     size <span class="code-number">128M</span>
 }</div>
                     </div>
                     <div class="card" style="border-top-color: #ffc107;">
-                        <h3>&gt; 10,000 接口 ⭐</h3>
+                        <h3>&gt; 10,000 PPPoE ⭐</h3>
                         <div class="code-block">
 statseg {
     size <span class="code-number">256M-512M</span>
@@ -680,52 +680,59 @@ statseg {
         <!-- Slide 8: 真实案例 - 2万接口成功部署 -->
         <div class="slide">
             <div class="slide-header">
-                <h2 class="slide-title">真实案例：2万 PPPoX 接口部署验证</h2>
+                <h2 class="slide-title">真实案例：2万 PPPoE 拨号客户端压测验证</h2>
             </div>
             <div class="slide-content">
                 <div class="two-columns">
                     <div>
                         <h3 style="color: #28a745; margin-bottom: 20px;">✅ 部署配置</h3>
                         <div class="success-box">
-                            <strong>场景：</strong>
+                            <strong>场景：</strong>PPPoX 客户端压力测试
                             <ul style="margin-top: 10px;">
-                                <li><strong>20,000</strong> PPPoX 虚拟接口</li>
+                                <li><strong>20,000</strong> PPPoX 接口创建</li>
+                                <li><strong>5,467</strong> 活跃会话 (27.3%)</li>
                                 <li>5 线程 (1 main + 4 workers)</li>
                                 <li>Main heap: <strong>3G</strong></li>
                                 <li>Stats segment: <strong>256M</strong></li>
                             </ul>
                         </div>
-                        <h3 style="color: #667eea; margin: 30px 0 20px;">📊 实际内存使用</h3>
-                        <div class="code-block">
+                        <h3 style="color: #667eea; margin: 20px 0 15px;">📊 实测内存使用 (5467 会话)</h3>
+                        <div class="code-block" style="font-size: 0.85em;">
 <span class="code-comment"># Stats Segment</span>
-total: <span class="code-number">256M</span>, used: <span class="code-number">104.73M</span> (<span class="code-string">41%</span>)
-free: 151.27M, trimmable: 126.07M
+total: <span class="code-number">256M</span>, used: <span class="code-number">106.26M</span> (<span class="code-string">41.5%</span>)
+free: 149.74M, trimmable: 126.07M
 
 <span class="code-comment"># Main Heap</span>
-total: <span class="code-number">3G</span>, used: <span class="code-number">525.85M</span> (<span class="code-string">17.5%</span>)
-free: 2.49G, trimmable: 1.97G
+total: <span class="code-number">3G</span>, used: <span class="code-number">657.92M</span> (<span class="code-string">21.9%</span>)
+free: 2.36G, trimmable: 1.82G
+                        </div>
+                        <div class="warning-box" style="margin-top: 15px; font-size: 0.85em;">
+                            <strong>📈 全量 20k 会话预估：</strong><br>
+                            • Main Heap: ~2.4G (3G ✅)<br>
+                            • Stats Segment: ~388M (256M ⚠️ 建议 512M)
                         </div>
                     </div>
                     <div>
                         <h3 style="color: #667eea; margin-bottom: 20px;">🔍 关键指标验证</h3>
                         <div class="highlight-box">
                             <table style="font-size: 0.9em; margin: 0;">
+                                <tr><td><strong>PPPoX 接口总数</strong></td><td style="color: #28a745;">20,000</td></tr>
+                                <tr><td><strong>活跃会话 (RUNNING)</strong></td><td style="color: #28a745;">5,467 (27.3%)</td></tr>
                                 <tr><td><strong>API Ring Misses</strong></td><td style="color: #28a745;">0 (完美)</td></tr>
-                                <tr><td><strong>Buffer 使用率</strong></td><td style="color: #28a745;">3% (充足)</td></tr>
-                                <tr><td><strong>Stats 使用率</strong></td><td style="color: #28a745;">41% (安全)</td></tr>
-                                <tr><td><strong>Main Heap 使用率</strong></td><td style="color: #28a745;">17.5% (非常充足)</td></tr>
+                                <tr><td><strong>Stats 使用率</strong></td><td style="color: #28a745;">41.5% (安全)</td></tr>
+                                <tr><td><strong>Main Heap 使用率</strong></td><td style="color: #28a745;">21.9% (充足)</td></tr>
                             </table>
                         </div>
-                        <h3 style="color: #28a745; margin: 30px 0 20px;">✅ 验证结论</h3>
-                        <div class="success-box">
-                            <div class="code-block">
-<span class="code-keyword">heapsize</span> <span class="code-number">3G</span>      <span class="code-comment"># 2万接口够用</span>
+                        <h3 style="color: #28a745; margin: 20px 0 15px;">✅ 验证结论</h3>
+                        <div class="success-box" style="font-size: 0.95em;">
+                            <div class="code-block" style="font-size: 0.85em;">
+<span class="code-keyword">heapsize</span> <span class="code-number">3G</span>      <span class="code-comment"># 2万 PPPoE 够用</span>
 
 <span class="code-keyword">statseg</span> {
-  <span class="code-keyword">size</span> <span class="code-number">256M</span>   <span class="code-comment"># 2万接口够用</span>
+  <span class="code-keyword">size</span> <span class="code-number">512M</span>   <span class="code-comment"># 建议预留更多</span>
 }
                             </div>
-                            <p style="margin-top: 15px;"><strong>结论：</strong>3G Main Heap + 256M Stats 可稳定支持 <strong>20,000+</strong> PPPoX 接口</p>
+                            <p style="margin-top: 10px;"><strong>结论：</strong>3G Main Heap + 512M Stats 可稳定支持全量 <strong>20,000</strong> PPPoE 会话</p>
                         </div>
                     </div>
                 </div>
@@ -933,7 +940,7 @@ base 0x130042000, size <span class="code-number">32m</span>, locked
                 <div class="three-columns">
                     <div class="card">
                         <h3>小型部署</h3>
-                        <p style="color: #666; margin-bottom: 15px;">&lt; 100 接口，&lt; 10K 路由</p>
+                        <p style="color: #666; margin-bottom: 15px;">&lt; 1000 PPPoE 会话</p>
                         <div class="code-block" style="font-size: 0.8em;"><span class="code-keyword">heapsize</span> <span class="code-number">2G</span> <span class="code-comment"># 默认 1G 较小，建议 2G+</span>
 
 <span class="code-keyword">statseg</span> {
@@ -947,7 +954,7 @@ base 0x130042000, size <span class="code-number">32m</span>, locked
                     </div>
                     <div class="card" style="border-top-color: #28a745;">
                         <h3>中型部署 ⭐</h3>
-                        <p style="color: #666; margin-bottom: 15px;">100-1000 接口，10K-100K 路由</p>
+                        <p style="color: #666; margin-bottom: 15px;">1000-20000 PPPoE 会话</p>
                         <div class="code-block" style="font-size: 0.8em;"><span class="code-keyword">heapsize</span> <span class="code-number">3G</span>
 
 <span class="code-keyword">statseg</span> {
@@ -965,7 +972,7 @@ base 0x130042000, size <span class="code-number">32m</span>, locked
                     </div>
                     <div class="card" style="border-top-color: #ffc107;">
                         <h3>大型部署</h3>
-                        <p style="color: #666; margin-bottom: 15px;">&gt; 1000 接口，&gt; 100K 路由</p>
+                        <p style="color: #666; margin-bottom: 15px;">&gt; 20000 PPPoE 会话</p>
                         <div class="code-block" style="font-size: 0.8em;"><span class="code-keyword">heapsize</span> <span class="code-number">8G</span>
 
 <span class="code-keyword">statseg</span> {
@@ -996,8 +1003,8 @@ base 0x130042000, size <span class="code-number">32m</span>, locked
                     style="background: linear-gradient(135deg, #dc354515 0%, #dc354515 100%); border-left-color: #dc3545;">
                     <h3 style="color: #dc3545; margin-bottom: 20px;">⭐⭐⭐ 高优先级（必须做）</h3>
                     <ul style="font-size: 1.2em;">
-                        <li><strong>Stats Segment</strong> 根据接口数量调整</li>
-                        <li><strong>Main Heap</strong> 根据路由表规模调整</li>
+                        <li><strong>Stats Segment</strong> 根据 PPPoE 会话数量调整</li>
+                        <li><strong>Main Heap</strong> 根据 PPPoE 规模调整</li>
                         <li><strong>启用 Huge Pages</strong></li>
                     </ul>
                 </div>
@@ -1006,7 +1013,7 @@ base 0x130042000, size <span class="code-number">32m</span>, locked
                     <h3 style="color: #ffc107; margin-bottom: 20px;">⭐⭐ 中优先级（推荐做）</h3>
                     <ul style="font-size: 1.2em;">
                         <li><strong>NUMA 亲和性</strong>配置</li>
-                        <li><strong>API Segment</strong>（高频 API 场景）</li>
+                        <li><strong>API Segment</strong>（高频 PPPoE 管控场景）</li>
                     </ul>
                 </div>
                 <div class="highlight-box" style="margin-top: 30px;">
@@ -1039,7 +1046,7 @@ base 0x130042000, size <span class="code-number">32m</span>, locked
                         │ vppctl show memory [main-heap|api-segment|stats-segment]<br>
                         │<br>
                         ├─→ <strong>3. 评估实际需求</strong><br>
-                        │ • 接口/隧道数量 (show interface)<br>
+                        │ • PPPoE 会话数量 (show pppox interfaces)<br>
                         │ • 路由表规模 (show ip fib summary)<br>
                         │ • API 调用频率 (show api ring-stats)<br>
                         │<br>
@@ -1087,9 +1094,9 @@ base 0x130042000, size <span class="code-number">32m</span>, locked
                             <td>跨节点访问</td>
                         </tr>
                         <tr>
-                            <td><strong>接口统计</strong></td>
-                            <td><code>show interface</code></td>
-                            <td>接口数量</td>
+                            <td><strong>PPPoE 会话数</strong></td>
+                            <td><code>show pppox interfaces</code></td>
+                            <td>会话数量</td>
                         </tr>
                         <tr>
                             <td><strong>大页使用</strong></td>
@@ -1114,24 +1121,24 @@ base 0x130042000, size <span class="code-number">32m</span>, locked
                             <h3 style="margin-bottom: 15px;">🔥 最易 OOM：Main Heap</h3>
                             <ul style="font-size: 1.1em;">
                                 <li>压力大时最容易崩溃</li>
-                                <li>隧道/接口 > 1w 需 2G-3G</li>
+                                <li>PPPoE 会话 > 1w 需 2G-3G</li>
                                 <li>建议根据业务规模大幅预留</li>
                             </ul>
                         </div>
                         <div class="highlight-box" style="margin-top: 30px;">
-                            <h3 style="margin-bottom: 15px;">📊 Stats Segment 按接口规模调整</h3>
+                            <h3 style="margin-bottom: 15px;">📊 Stats Segment 按 PPPoE 规模调整</h3>
                             <ul style="font-size: 1.1em;">
-                                <li>默认 32M 适合 < 1k 接口</li>
-                                <li>1k-10k 接口时需 128M</li>
-                                <li>> 10k 接口时需 256M+</li>
+                                <li>默认 32M 适合 < 1k PPPoE</li>
+                                <li>1k-10k PPPoE 时需 128M</li>
+                                <li>> 10k PPPoE 时需 256M+</li>
                             </ul>
                         </div>
                         <div class="success-box" style="margin-top: 30px;">
                             <h3 style="margin-bottom: 15px;">✅ Main Heap 根据场景调整</h3>
                             <ul style="font-size: 1.1em;">
-                                <li>小型(<1k)：1-2G< /li>
-                                <li>中型(>1w IPsec/接口)：2-3G</li>
-                                <li>大型：4-8G</li>
+                                <li>小型(<1k PPPoE)：1-2G</li>
+                                <li>中型(1k-2w PPPoE)：2-3G</li>
+                                <li>大型(>2w PPPoE)：4-8G</li>
                             </ul>
                         </div>
                     </div>
