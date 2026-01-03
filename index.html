@@ -227,6 +227,34 @@
             align-items: center;
         }
 
+        .three-columns {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            align-items: stretch;
+        }
+
+        .three-columns .glass-card {
+            padding: 1.8rem;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .three-columns .glass-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .three-columns .glass-card ul {
+            flex: 1;
+        }
+
+        .three-columns .glass-card ul li {
+            padding: 0.5rem 0 0.5rem 1.5rem;
+            font-size: 1.05rem;
+        }
+
         ul {
             list-style: none;
         }
@@ -329,15 +357,15 @@
                 <div class="glass-card"
                     style="display: inline-block; padding: 4rem 6rem; border: 2px solid var(--primary);">
                     <h1 class="slide-title" style="font-size: 4.8rem; margin-bottom: 2rem; line-height: 1.1;">
-                        VPP Startup.conf<br><span style="color: var(--secondary);">内存配置全解析</span>
+                        VPP 内存配置<br><span style="color: var(--secondary);">踩坑与经验总结</span>
                     </h1>
                     <p class="slide-subtitle" style="font-size: 2rem; color: var(--text-dim); margin-bottom: 3rem;">
-                        20,000 PPPoE 真实案例驱动
+                        20,000 PPPoE 拨号压测实战记录
                     </p>
                     <div
                         style="height: 2px; background: linear-gradient(to right, transparent, var(--primary), transparent); margin: 3rem 0;">
                     </div>
-                    <p style="font-size: 1.4rem; font-weight: 500; color: var(--primary);">深度性能优化 | 生产级配置指南</p>
+                    <p style="font-size: 1.4rem; font-weight: 500; color: var(--primary);">真实问题 | 排查过程 | 解决方案</p>
                 </div>
             </div>
             <div class="slide-number">1</div>
@@ -346,32 +374,33 @@
         <!-- Slide 2: 目录 -->
         <div class="slide">
             <div class="slide-header">
-                <h2 class="slide-title">课程大纲</h2>
+                <h2 class="slide-title">分享大纲</h2>
+                <p class="slide-subtitle">从踩坑到解决，记录 2万 PPPoE 压测过程中的问题与思考</p>
             </div>
-            <div class="slide-content">
-                <div class="three-columns">
-                    <div class="glass-card">
-                        <h3 style="color: var(--primary); margin-bottom: 1.5rem;">📋 基础篇</h3>
-                        <ul style="font-size: 1.1rem;">
-                            <li>VPP 内存架构概览</li>
-                            <li>内存分类与用途</li>
-                            <li>Main Heap 详解</li>
+            <div class="slide-content" style="display: flex; align-items: center; justify-content: center;">
+                <div class="three-columns" style="width: 100%; max-width: 1400px;">
+                    <div class="glass-card" style="border-top: 3px solid var(--error);">
+                        <h3 style="color: var(--error);">🔥 遇到的问题</h3>
+                        <ul>
+                            <li>Stats Segment OOM 崩溃</li>
+                            <li>Main Heap 内存不足</li>
+                            <li>Buffer 池耗尽</li>
                         </ul>
                     </div>
-                    <div class="glass-card">
-                        <h3 style="color: var(--secondary); margin-bottom: 1.5rem;">⚠️ 核心篇</h3>
-                        <ul style="font-size: 1.1rem;">
-                            <li>Stats Segment (重点)</li>
-                            <li>API Segment 配置</li>
-                            <li>PPPoE 场景优化</li>
+                    <div class="glass-card" style="border-top: 3px solid var(--primary);">
+                        <h3 style="color: var(--primary);">🔍 排查过程</h3>
+                        <ul>
+                            <li>内存架构梳理</li>
+                            <li>源码验证默认值</li>
+                            <li>实测数据分析</li>
                         </ul>
                     </div>
-                    <div class="glass-card">
-                        <h3 style="color: var(--success); margin-bottom: 1.5rem;">🚀 实战篇</h3>
-                        <ul style="font-size: 1.1rem;">
-                            <li>2万 PPPoE 案例分析</li>
-                            <li>性能优化建议</li>
-                            <li>问题排查流程</li>
+                    <div class="glass-card" style="border-top: 3px solid var(--success);">
+                        <h3 style="color: var(--success);">✅ 经验总结</h3>
+                        <ul>
+                            <li>推荐配置参数</li>
+                            <li>监控命令速查</li>
+                            <li>调优优先级</li>
                         </ul>
                     </div>
                 </div>
@@ -383,34 +412,81 @@
         <div class="slide">
             <div class="slide-header">
                 <h2 class="slide-title">VPP 内存架构全景图</h2>
+                <p class="slide-subtitle">VPP 进程的四大内存区域及其作用</p>
             </div>
             <div class="slide-content">
-                <div class="glass-card" style="border: 1px solid var(--primary);">
-                    <div class="two-columns">
-                        <div>
-                            <div class="error-box" style="margin-bottom: 2rem;">
-                                <h3 style="color: var(--error); margin-bottom: 1rem;">🔥 Main Heap (main-heap-size)</h3>
-                                <p style="font-size: 1.1rem;">主线程 + Worker 线程内存。存放路由表、PPPoE 会话、虚拟接口。重压力下最易 OOM！建议
-                                    <strong>2G-3G+</strong>
-                                </p>
-                            </div>
-                            <div class="highlight-box">
-                                <h3 style="color: var(--primary); margin-bottom: 1rem;">📊 Stats Segment (statseg)</h3>
-                                <p style="font-size: 1.1rem;">PPPoE 接口统计计数器。2w PPPoE 约需 <strong>256M</strong> (默认 32M
-                                    极易溢出)。</p>
-                            </div>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 2rem;">
+                    <!-- Main Heap -->
+                    <div class="glass-card" style="padding: 1.5rem; border-top: 4px solid var(--error);">
+                        <h3 style="color: var(--error); font-size: 1.2rem; margin-bottom: 0.8rem;">🔥 Main Heap</h3>
+                        <p style="font-size: 0.95rem; color: var(--text-dim); margin-bottom: 0.8rem;">核心数据结构存储区</p>
+                        <ul style="font-size: 0.9rem; margin-bottom: 1rem;">
+                            <li style="padding: 0.3rem 0 0.3rem 1.2rem;">路由表 (FIB)</li>
+                            <li style="padding: 0.3rem 0 0.3rem 1.2rem;">PPPoE 会话</li>
+                            <li style="padding: 0.3rem 0 0.3rem 1.2rem;">虚拟接口</li>
+                        </ul>
+                        <div style="background: rgba(239,68,68,0.15); padding: 0.6rem; border-radius: 8px; font-size: 0.85rem;">
+                            <strong>默认:</strong> 1G<br>
+                            <strong>建议:</strong> 2G-3G+
                         </div>
-                        <div class="architecture-diagram"
-                            style="font-size: 0.9rem; line-height: 1.5; color: var(--secondary);">
-                            ┌───────────────────────────────┐<br>
-                            │ VPP Process (Huge Pages) │<br>
-                            ├───────┬───────┬───────┬───────┤<br>
-                            │ Main │ Stats │ API │ Buffer│<br>
-                            │ Heap │ Seg │ Seg │ Pool │<br>
-                            ├───────┼───────┼───────┼───────┤<br>
-                            │ R/W │ R/O │ Ring │ HW │<br>
-                            └───────┴───────┴───────┴───────┘
+                    </div>
+                    <!-- Stats Segment -->
+                    <div class="glass-card" style="padding: 1.5rem; border-top: 4px solid var(--primary);">
+                        <h3 style="color: var(--primary); font-size: 1.2rem; margin-bottom: 0.8rem;">📊 Stats Segment</h3>
+                        <p style="font-size: 0.95rem; color: var(--text-dim); margin-bottom: 0.8rem;">统计计数器共享内存</p>
+                        <ul style="font-size: 0.9rem; margin-bottom: 1rem;">
+                            <li style="padding: 0.3rem 0 0.3rem 1.2rem;">接口收发包计数</li>
+                            <li style="padding: 0.3rem 0 0.3rem 1.2rem;">错误统计</li>
+                            <li style="padding: 0.3rem 0 0.3rem 1.2rem;">节点性能数据</li>
+                        </ul>
+                        <div style="background: rgba(56,189,248,0.15); padding: 0.6rem; border-radius: 8px; font-size: 0.85rem;">
+                            <strong>默认:</strong> 32M<br>
+                            <strong>建议:</strong> 256M (2w PPPoE)
                         </div>
+                    </div>
+                    <!-- API Segment -->
+                    <div class="glass-card" style="padding: 1.5rem; border-top: 4px solid var(--secondary);">
+                        <h3 style="color: var(--secondary); font-size: 1.2rem; margin-bottom: 0.8rem;">🔗 API Segment</h3>
+                        <p style="font-size: 0.95rem; color: var(--text-dim); margin-bottom: 0.8rem;">API 通信共享内存</p>
+                        <ul style="font-size: 0.9rem; margin-bottom: 1rem;">
+                            <li style="padding: 0.3rem 0 0.3rem 1.2rem;">CLI/API 消息队列</li>
+                            <li style="padding: 0.3rem 0 0.3rem 1.2rem;">Ring 缓冲区 (vlib/client)</li>
+                            <li style="padding: 0.3rem 0 0.3rem 1.2rem;">客户端连接管理</li>
+                        </ul>
+                        <div style="background: rgba(129,140,248,0.15); padding: 0.6rem; border-radius: 8px; font-size: 0.85rem;">
+                            <strong>默认:</strong> api: 16M, global: 64M<br>
+                            <strong>建议:</strong> 大量 API 调用时适当增加
+                        </div>
+                    </div>
+                    <!-- Buffers -->
+                    <div class="glass-card" style="padding: 1.5rem; border-top: 4px solid var(--success);">
+                        <h3 style="color: var(--success); font-size: 1.2rem; margin-bottom: 0.8rem;">📦 Buffers</h3>
+                        <p style="font-size: 0.95rem; color: var(--text-dim); margin-bottom: 0.8rem;">数据包缓冲池</p>
+                        <ul style="font-size: 0.9rem; margin-bottom: 1rem;">
+                            <li style="padding: 0.3rem 0 0.3rem 1.2rem;">网络数据包存储</li>
+                            <li style="padding: 0.3rem 0 0.3rem 1.2rem;">DMA 映射区域</li>
+                            <li style="padding: 0.3rem 0 0.3rem 1.2rem;">每 Worker 独立</li>
+                        </ul>
+                        <div style="background: rgba(16,185,129,0.15); padding: 0.6rem; border-radius: 8px; font-size: 0.85rem;">
+                            <strong>默认:</strong> 16384 个<br>
+                            <strong>建议:</strong> 按流量调整
+                        </div>
+                    </div>
+                </div>
+                <!-- 架构关系图 -->
+                <div class="glass-card" style="padding: 1.2rem; text-align: center;">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 1rem; font-size: 0.95rem;">
+                        <span style="color: var(--error);">Main Heap</span>
+                        <span style="color: var(--text-dim);">←→</span>
+                        <span style="padding: 0.5rem 1rem; background: var(--glass-bg); border-radius: 8px; border: 1px solid var(--glass-border);">VPP 主进程 (Huge Pages)</span>
+                        <span style="color: var(--text-dim);">←→</span>
+                        <span style="color: var(--primary);">Stats</span>
+                        <span style="color: var(--text-dim);">/</span>
+                        <span style="color: var(--secondary);">API</span>
+                        <span style="color: var(--text-dim);">(共享内存, 外部可访问)</span>
+                        <span style="color: var(--text-dim);">|</span>
+                        <span style="color: var(--success);">Buffers</span>
+                        <span style="color: var(--text-dim);">(DPDK管理)</span>
                     </div>
                 </div>
             </div>
@@ -451,8 +527,8 @@
                         <tr>
                             <td><strong>API Segment</strong></td>
                             <td><code>api-segment { api-size global-size }</code></td>
-                            <td>api-size: 32 global: 64M</td>
-                            <td>API 通信</td>
+                            <td>api: 16M, global: 64M</td>
+                            <td>API 通信、共享内存</td>
                             <td style="color: #28a745;">✅ 低 (极少 OOM)</td>
                         </tr>
                         <tr>
@@ -543,19 +619,18 @@
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td>
-                                        < 1,000</td>
+                                    <td> 小于 1,000</td>
                                     <td style="color: #28a745;">1-2G</td>
                                 </tr>
                                 <tr>
                                     <td>1,000 - 10,000</td>
                                     <td style="color: #ffc107;">2-3G</td>
                                 </tr>
-                                <tr style="background: #d4edda;">
+                                <tr>
                                     <td>10,000 - 20,000</td>
                                     <td style="color: #28a745; font-weight: 700;">3G (实测验证)</td>
                                 </tr>
-                                <tr style="background: #fff3cd;">
+                                <tr>
                                     <td>> 20,000</td>
                                     <td style="color: #ffc107; font-weight: 700;">4G+</td>
                                 </tr>
@@ -584,11 +659,11 @@
                                     <td>1,000 - 10,000</td>
                                     <td style="color: #ffc107;">64-128M</td>
                                 </tr>
-                                <tr style="background: #d4edda;">
+                                <tr>
                                     <td>10,000 - 20,000</td>
                                     <td style="color: #28a745; font-weight: 700;">256M (实测: 41%使用率)</td>
                                 </tr>
-                                <tr style="background: #fff3cd;">
+                                <tr>
                                     <td>> 20,000</td>
                                     <td style="color: #ffc107; font-weight: 700;">512M+</td>
                                 </tr>
@@ -822,7 +897,98 @@
             <div class="slide-number">10</div>
         </div>
 
-        <!-- Slide 11: API Segment 详解 -->
+        <!-- Slide 11: Memory vs Buffers 深度对比 -->
+        <div class="slide">
+            <div class="slide-header">
+                <h2 class="slide-title">Memory vs Buffers 深度对比</h2>
+                <p class="slide-subtitle">理解两者本质差异，避免配置误区</p>
+            </div>
+            <div class="slide-content">
+                <div class="two-columns">
+                    <div>
+                        <h3 style="color: var(--primary); margin-bottom: 20px;">📊 核心差异对比表</h3>
+                        <table style="font-size: 0.85em;">
+                            <thead>
+                                <tr>
+                                    <th>方面</th>
+                                    <th style="color: var(--error);">memory (main-heap)</th>
+                                    <th style="color: var(--success);">buffers</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>分配器</strong></td>
+                                    <td>clib_mem (标准)</td>
+                                    <td>pmalloc (物理感知)</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>底层实现</strong></td>
+                                    <td>普通 mmap</td>
+                                    <td>hugepage + mmap + mlock</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>页面大小</strong></td>
+                                    <td>4KB (默认)</td>
+                                    <td>2MB / 1GB (hugepages)</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>VA→PA 映射</strong></td>
+                                    <td>❌ 不维护</td>
+                                    <td>✅ 通过 pagemap 查询</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>内存锁定</strong></td>
+                                    <td>❌ 可被 swap</td>
+                                    <td>✅ mlock 锁定</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>配置单位</strong></td>
+                                    <td>字节大小 (2G)</td>
+                                    <td>缓冲区数量 (16384)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="highlight-box" style="margin-top: 15px; font-size: 0.9em;">
+                            <strong>🔑 相同点：</strong><br>
+                            • 本质都是虚拟内存（用户空间只能分配虚拟内存）<br>
+                            • 都支持 NUMA 亲和性配置<br>
+                            • 都在 startup.conf 中配置
+                        </div>
+                    </div>
+                    <div>
+                        <h3 style="color: var(--secondary); margin-bottom: 20px;">🔄 数据包处理路径</h3>
+                        <div class="glass-card" style="padding: 1.2rem; font-family: monospace; font-size: 0.85em; line-height: 1.8;">
+                            ┌─────────────────────────────────────┐<br>
+                            │ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;数据包处理路径 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+                            ├─────────────────────────────────────┤<br>
+                            │ 网卡 ─<span style="color: var(--warning);">DMA</span>─> <span style="color: var(--success);">Buffer</span> ─VPP─> <span style="color: var(--success);">Buffer</span> ─<span style="color: var(--warning);">DMA</span>─> 网卡 │<br>
+                            │ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: var(--text-dim);">(需PA)</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: var(--text-dim);">(需PA)</span> &nbsp;&nbsp;&nbsp;&nbsp;│<br>
+                            └─────────────────────────────────────┘<br>
+                            <span style="color: var(--warning);">DMA 直接访问物理内存，不经过 MMU</span>
+                        </div>
+                        <h3 style="color: var(--success); margin: 20px 0 15px;">💡 为什么 buffers 需要特殊处理？</h3>
+                        <div class="success-box" style="font-size: 0.9em;">
+                            <strong>pmalloc 的真正作用：</strong><br>
+                            • 分配虚拟内存（通过 hugepage 支撑）<br>
+                            • 通过 <code>/proc/self/pagemap</code> <strong>查询</strong> 物理地址<br>
+                            • 建立 <code>lookup_table</code> 缓存 VA→PA 映射<br>
+                            • 供 DPDK/网卡 DMA 使用物理地址
+                        </div>
+                        <div class="warning-box" style="margin-top: 15px; font-size: 0.85em;">
+                            <strong>⚠️ 澄清误区：</strong>pmalloc 不是"分配物理内存"，<br>
+                            而是分配虚拟内存 + 维护 VA→PA 映射表
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-card" style="margin-top: 1.5rem; padding: 1rem; text-align: center;">
+                    <span style="font-size: 1.1em; color: var(--primary);">💬 一句话总结：</span>
+                    <span style="font-size: 1.05em;"><strong>memory</strong> 是给 VPP "大脑"（控制平面）用的普通内存；<strong>buffers</strong> 是给 VPP "双手"（数据平面）用的、能让网卡直接 DMA 访问的优化内存。</span>
+                </div>
+            </div>
+            <div class="slide-number">11</div>
+        </div>
+
+        <!-- Slide 12: API Segment 详解 -->
         <div class="slide">
             <div class="slide-header">
                 <h2 class="slide-title">API Segment 配置详解</h2>
@@ -892,10 +1058,10 @@
                     </div>
                 </div>
             </div>
-            <div class="slide-number">11</div>
+            <div class="slide-number">12</div>
         </div>
 
-        <!-- Slide 12: API Ring 优化实战案例 -->
+        <!-- Slide 13: API Ring 优化实战案例 -->
         <div class="slide">
             <div class="slide-header">
                 <h2 class="slide-title">API Ring 优化实战案例</h2>
@@ -956,10 +1122,10 @@
                     </div>
                 </div>
             </div>
-            <div class="slide-number">12</div>
+            <div class="slide-number">13</div>
         </div>
 
-        <!-- Slide 13: NUMA 优化 -->
+        <!-- Slide 14: NUMA 优化 -->
         <div class="slide">
             <div class="slide-header">
                 <h2 class="slide-title">NUMA 架构优化</h2>
@@ -1028,10 +1194,153 @@
                     </div>
                 </div>
             </div>
-            <div class="slide-number">13</div>
+            <div class="slide-number">14</div>
         </div>
 
+        <!-- Slide 15: VPP 内存模块架构深度解析 -->
+        <div class="slide">
+            <div class="slide-header">
+                <h2 class="slide-title">VPP 内存模块架构深度解析</h2>
+                <p class="slide-subtitle">四大模块独立内存管理机制</p>
+            </div>
+            <div class="slide-content">
+                <div class="two-columns">
+                    <div>
+                        <h3 style="color: var(--primary); margin-bottom: 15px;">📊 模块独立性对比</h3>
+                        <table style="font-size: 0.8em;">
+                            <thead>
+                                <tr>
+                                    <th>模块</th>
+                                    <th>分配器</th>
+                                    <th>mmap 类型</th>
+                                    <th>共享性</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Main Heap</strong></td>
+                                    <td>dlmalloc (mspace)</td>
+                                    <td>PRIVATE + ANONYMOUS</td>
+                                    <td style="color: var(--error);">私有</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Buffers</strong></td>
+                                    <td>pmalloc (arena)</td>
+                                    <td>PRIVATE + HUGETLB</td>
+                                    <td style="color: var(--warning);">可共享</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Stats Segment</strong></td>
+                                    <td>dlmalloc (mspace)</td>
+                                    <td>SHARED + memfd</td>
+                                    <td style="color: var(--success);">共享</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>API Segment</strong></td>
+                                    <td>dlmalloc (ssvm)</td>
+                                    <td>SHARED + shm</td>
+                                    <td style="color: var(--success);">共享</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="highlight-box" style="margin-top: 15px; font-size: 0.85em;">
+                            <strong>🔑 mspace 是什么？</strong><br>
+                            dlmalloc 提供的机制，在<strong>指定内存区域</strong>上创建<strong>独立的堆管理器</strong>，
+                            支持在 hugepage、共享内存上分别进行内存管理。
+                        </div>
+                    </div>
+                    <div>
+                        <h3 style="color: var(--secondary); margin-bottom: 15px;">🔗 依赖关系图</h3>
+                        <div class="glass-card" style="padding: 1rem; font-family: monospace; font-size: 0.8em; line-height: 1.6;">
+                            ┌────────────────────────────────┐<br>
+                            │ <span style="color: var(--error);">Main Heap</span> (clib_mem_main)     │<br>
+                            │ 为所有模块提供元数据管理        │<br>
+                            └───────────┬────────────────────┘<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;┌───────┼───────┐<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;▼&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;▼&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;▼<br>
+                            ┌──────┐ ┌──────┐ ┌──────┐<br>
+                            │<span style="color: var(--success);">Physmem</span>│ │<span style="color: var(--primary);">Stats</span> │ │<span style="color: var(--secondary);">API</span>&nbsp;&nbsp;&nbsp;│<br>
+                            │pmalloc│ │memfd │ │shm&nbsp;&nbsp;&nbsp;│<br>
+                            └───┬───┘ └──────┘ └──────┘<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;▼<br>
+                            ┌──────┐<br>
+                            │<span style="color: var(--warning);">Buffers</span>│ ← 依赖 Physmem<br>
+                            └──────┘
+                        </div>
+                        <h3 style="color: var(--success); margin: 15px 0 10px;">📁 关键源码位置</h3>
+                        <div class="code-block" style="font-size: 0.75em; padding: 0.8rem;">
+                            <span class="code-comment"># Main Heap</span><br>
+                            src/vppinfra/mem_dlmalloc.c<br>
+                            <span class="code-comment"># Buffers</span><br>
+                            src/vlib/buffer.c, src/vppinfra/pmalloc.c<br>
+                            <span class="code-comment"># Stats</span><br>
+                            src/vlib/stats/init.c<br>
+                            <span class="code-comment"># API</span><br>
+                            src/svm/ssvm.c, src/vlibapi/memory_shared.c
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-number">15</div>
+        </div>
 
+        <!-- Slide 16: Linux mmap 标志详解 -->
+        <div class="slide">
+            <div class="slide-header">
+                <h2 class="slide-title">Linux mmap 标志详解</h2>
+                <p class="slide-subtitle">理解 VPP 内存分配的底层机制</p>
+            </div>
+            <div class="slide-content">
+                <div class="two-columns">
+                    <div>
+                        <h3 style="color: var(--primary); margin-bottom: 15px;">🔄 MAP_SHARED vs MAP_PRIVATE</h3>
+                        <div class="glass-card" style="padding: 1rem; margin-bottom: 1rem;">
+                            <h4 style="color: var(--success); margin-bottom: 8px;">MAP_SHARED</h4>
+                            <p style="font-size: 0.9em; color: var(--text-dim);">多进程共享同一物理内存，修改互相可见</p>
+                            <div style="font-family: monospace; font-size: 0.8em; margin-top: 8px; color: var(--text-dim);">
+                                进程A ──┐<br>
+                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├──▶ [物理内存] ← 修改同步<br>
+                                进程B ──┘
+                            </div>
+                            <p style="font-size: 0.85em; margin-top: 8px;"><strong>用途:</strong> Stats/API Segment (vppctl 访问)</p>
+                        </div>
+                        <div class="glass-card" style="padding: 1rem;">
+                            <h4 style="color: var(--warning); margin-bottom: 8px;">MAP_PRIVATE (COW)</h4>
+                            <p style="font-size: 0.9em; color: var(--text-dim);">写时复制，修改只对本进程可见</p>
+                            <div style="font-family: monospace; font-size: 0.8em; margin-top: 8px; color: var(--text-dim);">
+                                进程A ──▶ [副本A] ← 独立修改<br>
+                                进程B ──▶ [副本B] ← 独立修改
+                            </div>
+                            <p style="font-size: 0.85em; margin-top: 8px;"><strong>用途:</strong> Main Heap (进程私有)</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 style="color: var(--secondary); margin-bottom: 15px;">📦 MAP_HUGETLB & MAP_ANONYMOUS</h3>
+                        <div class="glass-card" style="padding: 1rem; margin-bottom: 1rem;">
+                            <h4 style="color: var(--error); margin-bottom: 8px;">MAP_HUGETLB (大页)</h4>
+                            <table style="font-size: 0.8em; margin: 8px 0;">
+                                <tr><td>普通页</td><td>4KB</td><td style="color: var(--error);">TLB miss 多</td></tr>
+                                <tr><td>大页</td><td>2MB</td><td style="color: var(--success);">TLB 效率 512×</td></tr>
+                                <tr><td>超大页</td><td>1GB</td><td style="color: var(--success);">TLB 效率 262144×</td></tr>
+                            </table>
+                            <p style="font-size: 0.85em;"><strong>用途:</strong> Buffers (高性能数据包处理)</p>
+                        </div>
+                        <div class="glass-card" style="padding: 1rem;">
+                            <h4 style="color: var(--primary); margin-bottom: 8px;">MAP_ANONYMOUS (匿名)</h4>
+                            <p style="font-size: 0.9em; color: var(--text-dim);">不关联文件，内存初始化为 0，fd = -1</p>
+                            <p style="font-size: 0.85em; margin-top: 8px;"><strong>用途:</strong> Main Heap, Buffers</p>
+                        </div>
+                        <div class="warning-box" style="margin-top: 1rem; font-size: 0.85em; padding: 0.8rem;">
+                            <strong>VPP 典型组合：</strong><br>
+                            • Main Heap: <code>PRIVATE | ANONYMOUS</code><br>
+                            • Buffers: <code>PRIVATE | ANONYMOUS | HUGETLB</code><br>
+                            • Stats/API: <code>SHARED</code> + memfd/shm
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-number">16</div>
+        </div>
 
         <div class="slide">
             <div class="slide-header">
@@ -1066,7 +1375,7 @@
                     </div>
                 </div>
             </div>
-            <div class="slide-number">14</div>
+            <div class="slide-number">17</div>
         </div>
 
         <div class="slide">
@@ -1095,7 +1404,7 @@
                     </div>
                 </div>
             </div>
-            <div class="slide-number">15</div>
+            <div class="slide-number">18</div>
         </div>
 
         <div class="slide">
@@ -1147,18 +1456,18 @@
                     </table>
                 </div>
             </div>
-            <div class="slide-number">16</div>
+            <div class="slide-number">19</div>
         </div>
 
         <div class="slide">
             <div class="slide-header">
-                <h2 class="slide-title">关键要点总结</h2>
+                <h2 class="slide-title">踩坑经验总结</h2>
             </div>
             <div class="slide-content">
                 <div class="two-columns">
                     <div>
                         <div class="glass-card" style="border-top: 4px solid var(--error); margin-bottom: 2rem;">
-                            <h3 style="color: var(--error); margin-bottom: 1rem;">🔥 核心结论</h3>
+                            <h3 style="color: var(--error); margin-bottom: 1rem;">🔥 核心教训</h3>
                             <ul style="font-size: 1.1rem;">
                                 <li><strong>Main Heap</strong> 是最脆弱的环节，2w 接口建议 3G+。</li>
                                 <li><strong>Stats Seg</strong> 32M 默认值在大规模场景必满，建议 256M。</li>
@@ -1166,7 +1475,7 @@
                             </ul>
                         </div>
                         <div class="glass-card" style="border-top: 4px solid var(--success);">
-                            <h3 style="color: var(--success); margin-bottom: 1rem;">✅ 推荐参数 (2w会话)</h3>
+                            <h3 style="color: var(--success); margin-bottom: 1rem;">✅ 推荐参数 (2w会话实测验证)</h3>
                             <div class="code-block" style="font-size: 0.9rem; margin-bottom: 0;">
                                 main-heap-size 3G<br>
                                 statseg { size 256M }<br>
@@ -1189,12 +1498,12 @@
                     </div>
                 </div>
             </div>
-            <div class="slide-number">17</div>
+            <div class="slide-number">20</div>
         </div>
 
         <div class="slide">
             <div class="slide-header">
-                <h2 class="slide-title">感谢观看！</h2>
+                <h2 class="slide-title">感谢聊天！</h2>
             </div>
             <div class="slide-content contact-section">
                 <div class="glass-card" style="display: inline-block; padding: 3rem 5rem;">
@@ -1208,18 +1517,18 @@
                                 style="max-width: 350px; border-radius: 20px; box-shadow: 0 0 30px rgba(56, 189, 248, 0.2);">
                         </div>
                         <div style="text-align: left; line-height: 2.2; font-size: 1.4rem;">
-                            <p>💬 <strong>扫码加群</strong> | 与专家同行</p>
-                            <p>🚀 <strong>分享经验</strong> | 共同成长</p>
-                            <p>📚 <strong>获取资料</strong> | 文档/配置</p>
+                            <p>💬 <strong>扫码加群</strong> | 一起讨论 VPP</p>
+                            <p>🚀 <strong>分享经验</strong> | 共同踩坑共同成长</p>
+                            <p>📚 <strong>获取资料</strong> | 配置/脚本/文档</p>
                             <p>🎯 <strong>技术支持</strong> | 疑难解答</p>
                         </div>
                     </div>
                 </div>
                 <div style="margin-top: 4rem; color: var(--text-dim); font-size: 1rem;">
-                    © 2025 VPP 技术分享 | 专业 · 深度 · 极客
+                    © 2025 VPP 实战经验分享 | 真实踩坑 · 深度思考 · 共同进步
                 </div>
             </div>
-            <div class="slide-number">18</div>
+            <div class="slide-number">21</div>
         </div>
     </div>
 
