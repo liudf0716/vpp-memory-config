@@ -589,7 +589,7 @@
                         </div>
                         <h3 style="color: #667eea; margin: 30px 0 20px;">监控命令</h3>
                         <div class="code-block">
-                            vppctl show memory main-heap
+                            vppctl show memory main-heap <br>
                             vppctl show threads
                         </div>
                     </div>
@@ -790,8 +790,9 @@
                         <h3 style="color: #28a745; margin: 20px 0 15px;">✅ 验证结论</h3>
                         <div class="success-box" style="font-size: 0.95em;">
                             <div class="code-block" style="font-size: 0.85em;">
+                                <span class="code-keyword">memory</span> {
                                 <span class="code-keyword">main-heap-size</span> <span class="code-number">3G</span>
-                                <span class="code-comment"># 2万 PPPoE 实测够用</span>
+                                <span class="code-comment"># 2万 PPPoE 实测够用</span> }<br>
 
                                 <span class="code-keyword">statseg</span> {
                                 <span class="code-keyword">size</span> <span class="code-number">256M</span> <span
@@ -1014,17 +1015,18 @@
                         </div>
                         <h3 style="color: #667eea; margin: 20px 0 15px;">配置参数</h3>
                         <div class="code-block" style="font-size: 0.85em;">
-                            <span class="code-keyword">api-segment</span> {
-                            <span class="code-keyword">global-size</span> <span class="code-number">128M</span> <span
-                                class="code-comment"># 全局区域大小</span>
-                            <span class="code-keyword">api-size</span> <span class="code-number">64M</span> <span
-                                class="code-comment"># API段大小(默认16M)</span>
-                            }
+                            <span class="code-keyword">api-segment</span> { <br>
+                            <span class="code-keyword">global-size</span> <span class="code-number">128M</span> 
+                            <span class="code-comment"># 全局区域大小</span> <br>
+                            <span class="code-keyword">api-size</span> <span class="code-number">64M</span> 
+                            <span class="code-comment"># API段大小(默认16M)</span>
+                            <br>}<br>
 
-                            <span class="code-keyword">api-queue</span> {
+                            <span class="code-keyword">api-queue</span> 
+                            { <br>
                             <span class="code-keyword">length</span> <span class="code-number">4096</span> <span
                                 class="code-comment"># 消息队列长度(默认1024)</span>
-                            }
+                            <br> }
                         </div>
                     </div>
                     <div>
@@ -1051,8 +1053,8 @@
                         </div>
                         <h3 style="color: #667eea; margin: 20px 0 15px;">监控命令</h3>
                         <div class="code-block" style="font-size: 0.85em;">
-                            vppctl show api ring-stats <span class="code-comment"># Ring使用情况</span>
-                            vppctl show memory api-segment <span class="code-comment"># 内存使用</span>
+                            vppctl show api ring-stats <span class="code-comment"># Ring使用情况</span> <br>
+                            vppctl show memory api-segment <span class="code-comment"># 内存使用</span> <br>
                             vppctl show api clients <span class="code-comment"># 连接的客户端</span>
                         </div>
                     </div>
@@ -1093,18 +1095,17 @@
                     <div>
                         <h3 style="color: #28a745; margin-bottom: 20px;">✅ 优化配置</h3>
                         <div class="code-block" style="font-size: 0.85em;">
-                            <span class="code-comment"># startup.conf 优化配置</span>
-                            <span class="code-keyword">api-segment</span> {
-                            <span class="code-keyword">gid</span> vpp
+                            <span class="code-comment"># startup.conf 优化配置</span><br>
+                            <span class="code-keyword">api-segment</span> {<br>
+                            <span class="code-keyword">gid</span> vpp<br>
                             <span class="code-keyword">api-size</span> <span class="code-number">64M</span> <span
-                                class="code-comment"># 增大API段</span>
-                            <span class="code-keyword">global-size</span> <span class="code-number">128M</span> <span
-                                class="code-comment"># 必须 > api-size</span>
+                                class="code-comment"># 增大API段</span><br>
+                            <span class="code-keyword">global-size</span> <span class="code-number">128M</span> 
                             }
 
-                            <span class="code-keyword">api-queue</span> {
+                            <span class="code-keyword">api-queue</span> {<br>
                             <span class="code-keyword">length</span> <span class="code-number">4096</span> <span
-                                class="code-comment"># 增大队列容量</span>
+                                class="code-comment"># 增大队列容量</span><br>
                             }
                         </div>
                         <div class="warning-box" style="margin-top: 15px; font-size: 0.9em;">
@@ -1134,22 +1135,22 @@
                 <div class="two-columns">
                     <div>
                         <h3 style="color: #667eea; margin-bottom: 20px;">NUMA 架构示意图</h3>
-                        <div class="architecture-diagram">
-                            <div style="font-family: monospace; font-size: 1.1em; line-height: 1.8;">
-                                ┌──────── 双 NUMA 节点服务器 ────────┐<br>
-                                │ NUMA Node 0 NUMA Node 1 │<br>
-                                │ ┌──────────┐ ┌──────────┐ │<br>
-                                │ │ CPU 0-7 │ │ CPU 8-15 │ │<br>
-                                │ └──────────┘ └──────────┘ │<br>
-                                │ ┌──────────┐ ┌──────────┐ │<br>
-                                │ │ Memory A │ │ Memory B │ │<br>
-                                │ │ 64GB │ │ 64GB │ │<br>
-                                │ └──────────┘ └──────────┘ │<br>
-                                │ ↑ ↑ │<br>
-                                │ 本地访问快 本地访问快 │<br>
-                                │ 远程访问慢 远程访问慢 │<br>
-                                └────────────────────────────────┘
-                            </div>
+                        <div class="glass-card" style="padding: 1.2rem; background: #0b0f1a;">
+                            <pre style="font-family: 'JetBrains Mono', monospace; font-size: 0.85em; line-height: 1.5; margin: 0; color: var(--text-main);">┌─────────── 双 NUMA 节点服务器 ───────────┐
+│                                          │
+│   NUMA Node 0         NUMA Node 1        │
+│  ┌───────────┐       ┌───────────┐       │
+│  │  CPU 0-7  │       │  CPU 8-15 │       │
+│  └─────┬─────┘       └─────┬─────┘       │
+│        │                   │             │
+│  ┌─────▼─────┐       ┌─────▼─────┐       │
+│  │ Memory A  │       │ Memory B  │       │
+│  │   64GB    │       │   64GB    │       │
+│  └───────────┘       └───────────┘       │
+│        ↑                   ↑             │
+│   <span style="color: var(--success);">本地访问快</span>           <span style="color: var(--success);">本地访问快</span>         │
+│   <span style="color: var(--error);">远程访问慢</span>  ←─────→  <span style="color: var(--error);">远程访问慢</span>         │
+└──────────────────────────────────────────┘</pre>
                         </div>
                         <div class="warning-box" style="margin-top: 20px; font-size: 0.9em;">
                             <strong>⚠️ NUMA 性能影响：</strong><br>
@@ -1174,15 +1175,15 @@
                         </div>
                         <h3 style="color: #667eea; margin: 20px 0 15px;">🚀 性能优化建议</h3>
                         <div class="code-block" style="font-size: 0.85em;">
-                            <span class="code-comment"># CPU 线程绑定到同一 NUMA</span>
-                            <span class="code-keyword">cpu</span> {
-                            <span class="code-keyword">main-core</span> <span class="code-number">0</span>
-                            <span class="code-keyword">corelist-workers</span> <span class="code-number">1-7</span>
+                            <span class="code-comment"># CPU 线程绑定到同一 NUMA</span><br>
+                            <span class="code-keyword">cpu</span> { <br>
+                            <span class="code-keyword">main-core</span> <span class="code-number">1</span> <br>
+                            <span class="code-keyword">corelist-workers</span> <span class="code-number">2-7</span>
                             <span class="code-comment"># 只用 NUMA 0</span>
-                            }
+                            }<br>
 
-                            <span class="code-comment"># 启用大页提升性能</span>
-                            <span class="code-keyword">memory</span> {
+                            <span class="code-comment"># 启用大页提升性能</span><br>
+                            <span class="code-keyword">memory</span> {<br>
                             <span class="code-keyword">main-heap-page-size</span> <span class="code-number">2M</span>
                             }
                         </div>
@@ -1251,21 +1252,23 @@
                     </div>
                     <div>
                         <h3 style="color: var(--secondary); margin-bottom: 15px;">🔗 依赖关系图</h3>
-                        <div class="glass-card" style="padding: 1rem; font-family: monospace; font-size: 0.8em; line-height: 1.6;">
-                            ┌────────────────────────────────┐<br>
-                            │ <span style="color: var(--error);">Main Heap</span> (clib_mem_main)     │<br>
-                            │ 为所有模块提供元数据管理        │<br>
-                            └───────────┬────────────────────┘<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;┌───────┼───────┐<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;▼&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;▼&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;▼<br>
-                            ┌──────┐ ┌──────┐ ┌──────┐<br>
-                            │<span style="color: var(--success);">Physmem</span>│ │<span style="color: var(--primary);">Stats</span> │ │<span style="color: var(--secondary);">API</span>&nbsp;&nbsp;&nbsp;│<br>
-                            │pmalloc│ │memfd │ │shm&nbsp;&nbsp;&nbsp;│<br>
-                            └───┬───┘ └──────┘ └──────┘<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;▼<br>
-                            ┌──────┐<br>
-                            │<span style="color: var(--warning);">Buffers</span>│ ← 依赖 Physmem<br>
-                            └──────┘
+                        <div class="glass-card" style="padding: 1rem; background: #0b0f1a;">
+                            <pre style="font-family: 'JetBrains Mono', monospace; font-size: 0.75em; line-height: 1.4; margin: 0; color: var(--text-main);">┌────────────────────────────────┐
+│ <span style="color: var(--error);">Main Heap</span> (clib_mem_main)     │
+│ 为所有模块提供元数据管理       │
+└───────────┬────────────────────┘
+            │
+    ┌───────┼───────┐
+    ▼       ▼       ▼
+┌────────┐ ┌──────┐ ┌──────┐
+│<span style="color: var(--success);">Physmem</span> │ │<span style="color: var(--primary);">Stats</span> │ │<span style="color: var(--secondary);">API</span>   │
+│pmalloc │ │memfd │ │shm   │
+└───┬────┘ └──────┘ └──────┘
+    │
+    ▼
+┌────────┐
+│<span style="color: var(--warning);">Buffers</span> │ ← 依赖 Physmem
+└────────┘</pre>
                         </div>
                         <h3 style="color: var(--success); margin: 15px 0 10px;">📁 关键源码位置</h3>
                         <div class="code-block" style="font-size: 0.75em; padding: 0.8rem;">
@@ -1477,7 +1480,7 @@
                         <div class="glass-card" style="border-top: 4px solid var(--success);">
                             <h3 style="color: var(--success); margin-bottom: 1rem;">✅ 推荐参数 (2w会话实测验证)</h3>
                             <div class="code-block" style="font-size: 0.9rem; margin-bottom: 0;">
-                                main-heap-size 3G<br>
+                                memory { main-heap-size 3G }<br>
                                 statseg { size 256M }<br>
                                 buffers { buffers-per-numa 131072 }
                             </div>
