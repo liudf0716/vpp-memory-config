@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VPP 多用户拨号隔离解决方案</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0e14;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --accent-color: #007aff;
+            --text-main: #e0e6ed;
+            --text-dim: #94a3b8;
+            --code-bg: #1a1b26;
+        }
+
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-color);
+            color: var(--text-main);
+        }
+
+        .presentation {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .slide {
+            min-width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 32px;
+            padding: 50px;
+            max-width: 1400px;
+            width: 95%;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 4.2rem;
+            margin-bottom: 1rem;
+            color: #fff;
+            font-weight: 700;
+        }
+
+        h2 {
+            font-size: 3.2rem;
+            color: var(--accent-color);
+            margin-top: 0;
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+
+        h3 {
+            color: var(--accent-color);
+            margin: 15px 0;
+            font-size: 1.8rem;
+            text-align: left;
+            border-left: 6px solid var(--accent-color);
+            padding-left: 15px;
+        }
+
+        p {
+            line-height: 1.6;
+            color: var(--text-main);
+            margin: 10px 0;
+            font-size: 1.4rem;
+        }
+
+        pre {
+            background: var(--code-bg);
+            padding: 20px;
+            border-radius: 12px;
+            overflow-x: auto;
+            border: 1px solid #334155;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            text-align: left;
+            margin: 10px 0;
+            color: #e2e8f0;
+            max-height: 450px;
+            line-height: 1.5;
+        }
+
+        .topo-box {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 30px 0;
+            gap: 15px;
+        }
+
+        .node {
+            background: #1e293b;
+            border: 2px solid var(--accent-color);
+            padding: 15px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .arrow {
+            width: 80px;
+            height: 2px;
+            background: var(--text-dim);
+            position: relative;
+        }
+
+        .arrow::after {
+            content: '▶';
+            position: absolute;
+            right: -5px;
+            top: -10px;
+            color: var(--text-dim);
+        }
+
+        .config-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            text-align: left;
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            gap: 15px;
+            z-index: 100;
+        }
+
+        .btn {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: 0.3s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .btn:hover {
+            background: var(--accent-color);
+        }
+
+        .active .fade-in {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .fade-in {
+            opacity: 0;
+            transform: translateY(15px);
+            transition: 0.6s;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="presentation" id="presentation">
+
+        <!-- SLIDE 1: Title -->
+        <section class="slide">
+            <div class="glass-card fade-in">
+                <h1 style="color: var(--accent-color);">VPP 多用户拨号隔离与 classify table 实现</h1>
+                <p style="font-size: 1.2rem;">基于 2-VPP (Edge & BRAS) 架构的实战演练</p>
+                <div style="margin-top: 40px; color: var(--text-dim);">
+                    ← 使用方向键切换步骤 →
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 2: Requirements -->
+        <section class="slide">
+            <div class="glass-card fade-in">
+                <h2>业务需求描述</h2>
+                <div style="text-align: left; display: inline-block; max-width: 900px;">
+                    <p><strong>1. 海量用户接入</strong>：局域网存在大量用户拨号需求，需确保系统在高并发下的稳定性。</p>
+                    <p><strong>2. IP 与隧道 1:1 强绑定</strong>：每个用户 IP 必须对应一个唯一的 PPPoE 隧道（Session）。</p>
+                    <p><strong>3. 对称策略路由 (Symmetric PBR)</strong>：</p>
+                    <ul style="color: var(--text-dim); line-height: 1.8;">
+                        <li><strong>上行方向</strong>：用户访问外网时，必须强制走其专属的 PPPoE 隧道，实现按源分流。</li>
+                        <li><strong>下行方向</strong>：BRAS 端返回的数据报文，必须精准引导回原 PPPoE 隧道，确保路径一致性。</li>
+                    </ul>
+                    <p><strong>4. 彻底的多租户隔离</strong>：用户之间在路由层面完全不可见，防止内网横向渗透。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 3: POC Topology -->
+        <section class="slide">
+            <div class="glass-card fade-in">
+                <h2>POC 实验网络拓扑</h2>
+                <div class="topo-box">
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <div class="node">用户 NS1</div>
+                        <div class="node">用户 NS2</div>
+                    </div>
+                    <div class="arrow"></div>
+                    <div class="node" style="background: #2d3748;">VPP-Edge (拨号端)</div>
+                    <div class="arrow" style="width: 150px;">
+                        <span
+                            style="position: absolute; top: -20px; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 0.7rem;">
+                            PPPoE Tunnel
+                        </span>
+                    </div>
+                    <div class="node" style="background: #2d3748;">VPP-BRAS (服务端)</div>
+                    <div class="arrow"></div>
+                    <div class="node">中心服务器 NS_Server</div>
+                </div>
+                <p>• <strong>边缘侧</strong>: 2个独立 NS 模拟拨号用户，通过 Tap 接入 Edge VPP。</p>
+                <p>• <strong>核心侧</strong>: BRAS VPP 终结会话，并通过 Classify Table 实现多租户回程隔离。</p>
+            </div>
+        </section>
+
+        <!-- SLIDE 4: Edge VPP Config -->
+        <section class="slide">
+            <div class="glass-card fade-in">
+                <h2>边缘设备端 (Edge) 配置</h2>
+                <div class="config-grid">
+                    <div>
+                        <h3>VPP CLI 配置</h3>
+                        <pre>
+# 基础链路配置
+set int state G0 up
+set int ip addr G0 172.19.100.80/16
+set int state G1 up
+create tap id 0
+create tap id 1
+set int state tap0 up
+set int ip addr tap0 192.168.1.2/24
+set int state tap1 up
+set int ip addr tap1 192.168.2.2/24
+ip route add 0.0.0.0/0 via 172.19.0.1
+
+# PPPoE 批量拨号
+create pppoe client batch G0 host-uniq-start 1 \
+  count 2 interval-us 10 dial-batch 2 ... dial
+
+# Classify VRF 隔离与分流
+ip table add 101
+ip table add 102
+classify table mask l3 ip4 src
+classify session table-index 0 match l3 ip4 src 192.168.1.1 action set-ip4-fib-id 101
+classify session table-index 0 match l3 ip4 src 192.168.2.1 action set-ip4-fib-id 102
+ip route add table 101 0.0.0.0/0 via pppox0
+ip route add table 102 0.0.0.0/0 via pppox1
+ip route add table 101 192.168.1.0/24 via tap0
+ip route add table 102 192.168.2.0/24 via tap1
+set interface input acl intfc tap0 ip4-table 0
+set interface input acl intfc tap1 ip4-table 0
+                    </pre>
+                    </div>
+                    <div>
+                        <h3>Linux NetNS 配置</h3>
+                        <pre>
+# 创建与配置 NS1
+ip netns add ns1
+ip link set tap0 netns ns1
+ip netns exec ns1 ip addr add 192.168.1.1/24 dev tap0
+ip netns exec ns1 ip link set tap0 up
+ip netns exec ns1 ip route add default via 192.168.1.2
+
+# 创建与配置 NS2
+ip netns add ns2
+ip link set tap1 netns ns2
+ip netns exec ns2 ip addr add 192.168.2.1/24 dev tap1
+ip netns exec ns2 ip link set tap1 up
+ip netns exec ns2 ip route add default via 192.168.2.2
+                    </pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 5: Edge VPP Verification -->
+        <section class="slide">
+            <div class="glass-card fade-in">
+                <h2>边缘端 (Edge) 配置验证</h2>
+                <div class="config-grid">
+                    <div>
+                        <h3>接口与会话状态</h3>
+                        <pre>
+# 查看接口 IP 绑定
+show interface address
+
+# 查看 PPPoE 客户端会话状态
+show pppoe client
+                        </pre>
+                        <h3>分类表与 ACL 验证</h3>
+                        <pre>
+# 查看 Classify Table 与会话
+show classify tables verbose
+
+# 查看接口入方向 ACL 绑定
+show inacl type ip4
+                        </pre>
+                    </div>
+                    <div>
+                        <h3>VRF 路由表验证</h3>
+                        <pre>
+# 查看用户 1 专用路由表
+show ip fib table 101
+
+# 查看用户 2 专用路由表
+show ip fib table 102
+                        </pre>
+                        <div
+                            style="text-align: left; padding: 15px; background: rgba(0, 122, 255, 0.1); border-radius: 12px; margin-top: 10px;">
+                            <p style="color: #fff; font-weight: 600; margin-bottom: 5px;">验证要点：</p>
+                            <ul style="color: var(--text-dim); padding-left: 20px; font-size: 1.1rem;">
+                                <li>检查 pppox 接口是否已分配 IP 并处于 up 状态</li>
+                                <li>确认 Classify Table 0 存在匹配源 IP 的会话</li>
+                                <li>确认 table 10x 的默认路由指向对应的 pppox 接口</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 6: BRAS Device Config -->
+        <section class="slide">
+            <div class="glass-card fade-in">
+                <h2>BRAS 服务端 (BRAS) 配置</h2>
+                <div class="config-grid">
+                    <div>
+                        <h3>Classify Table 隔离与分流</h3>
+                        <pre>
+# 1. 业务接口
+vppctl create tap id 1
+vppctl set interface state tap1 up
+vppctl set interface ip address tap1 100.100.100.2/24
+
+# 2. 用户会话隔离 (201 & 202)
+vppctl ip table add 201
+vppctl set interface ip table pppoe_session0 201
+vppctl set interface ip address pppoe_session0 100.64.0.1/32
+
+vppctl ip table add 202
+vppctl set interface ip table pppoe_session1 202
+vppctl set interface ip address pppoe_session1 100.64.0.1/32
+
+# 3. 下行 Classify Table 分流
+vppctl classify table mask l3 ip4 dst
+vppctl classify session table-index 0 match l3 ip4 dst 192.168.1.1 action set-ip4-fib-id 201
+vppctl classify session table-index 0 match l3 ip4 dst 192.168.2.1 action set-ip4-fib-id 202
+vppctl set interface input acl intfc tap1 ip4-table 0
+
+# 4. 跨表泄露与回程指引
+vppctl ip route add table 201 0.0.0.0/0 via ip4-lookup-in-table 0
+vppctl ip route add table 201 192.168.1.1/32 via pppoe_session0
+vppctl ip route add table 202 192.168.2.1/32 via pppoe_session1
+                    </pre>
+                    </div>
+                    <div>
+                        <h3>Linux 业务侧配置</h3>
+                        <pre>
+# 创建 ns_server
+ip netns add ns_server
+ip link set tap1 netns ns_server
+
+# 配置 IP 与 启动接口
+ip netns exec ns_server ip addr add \
+  100.100.100.1/24 dev tap1
+ip netns exec ns_server ip link set tap1 up
+ip netns exec ns_server ip link set lo up
+
+# 设置回程默认路由指向 VPP
+ip netns exec ns_server ip route add \
+  default via 100.100.100.2
+
+# 验证命令：
+# ip netns exec ns1 ping 100.100.100.1
+# ip netns exec ns2 ping 100.100.100.1
+                    </pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 7: BRAS Device Verification -->
+        <section class="slide">
+            <div class="glass-card fade-in">
+                <h2>核心侧 (BRAS) 配置验证</h2>
+                <div class="config-grid">
+                    <div>
+                        <h3>接口与 VRF 绑定</h3>
+                        <pre>
+# 查看接口 IP 与 状态
+show interface address
+
+# 查看所有 IP 表 (VRFs)
+show ip table
+
+# 查看接口所在的 FIB 表 (VRF)
+show ip fib
+                        </pre>
+                        <h3>分类表与 ACL 验证</h3>
+                        <pre>
+# 查看下行 Classify Table 匹配规则
+show classify tables verbose
+
+# 查看业务接口 (tap1) 入方向 ACL
+show inacl type ip4
+                        </pre>
+                    </div>
+                    <div>
+                        <h3>核心路由表验证 (VRF 201/202)</h3>
+                        <pre>
+# 查看租户 1 路由表 (含泄露路由)
+show ip fib table 201
+
+# 查看租户 2 路由表 (含泄露路由)
+show ip fib table 202
+                        </pre>
+                        <div
+                            style="text-align: left; padding: 15px; background: rgba(0, 122, 255, 0.1); border-radius: 12px; margin-top: 10px;">
+                            <p style="color: #fff; font-weight: 600; margin-bottom: 5px;">验证要点：</p>
+                            <ul style="color: var(--text-dim); padding-left: 20px; font-size: 1.1rem;">
+                                <li>确认 pppoe_session 接口已分配到正确的 table 20x</li>
+                                <li>检查 Classify Table 匹配目的 IP 后是否设置了正确的 FIB ID</li>
+                                <li>验证 table 20x 中是否存在 0.0.0.0/0 指向 table 0 (Leaking)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 8: Summary -->
+        <section class="slide">
+            <div class="glass-card fade-in">
+                <h2>关键技术点总结</h2>
+                <div style="text-align: left; display: inline-block; max-width: 900px;">
+                    <p><strong>1. 分类查表 (Classify Table)</strong>: 上行基于源 IP，下行基于目的 IP，确保流量始终在正确的 VRF 中。</p>
+                    <p><strong>2. 路由泄露 (VRF Leaking)</strong>: 通过 `ip4-lookup-in-table 0` 使隔离表能够访问公共服务。</p>
+                    <p><strong>3. 回程路由精准指引</strong>: 在每个隔离表中配置精确的 `/32` 宿主路由，确保数据包准确通过 PPPoE 隧道回传。</p>
+                    <p><strong>4. 万级扩展能力</strong>: 利用 Classify 的 Hash Table 查表特性，匹配开销不随租户增加而线性增长。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 9: Contact -->
+        <section class="slide">
+            <div class="glass-card fade-in">
+                <h2>联系我们 / 加入探讨</h2>
+                <div style="margin: 20px 0;">
+                    <img src="qq-group.jpg" alt="QQ Group"
+                        style="max-width: 400px; border-radius: 16px; border: 2px solid var(--accent-color); box-shadow: 0 10px 30px rgba(0,122,255,0.4);">
+                </div>
+                <p>扫描上方二维码加入 VPP 技术交流群</p>
+                <p style="font-size: 0.9rem; color: var(--accent-color); margin-top: 20px;">探索更多边缘计算与高性能转发方案</p>
+            </div>
+        </section>
+
+    </div>
+
+    <div class="controls">
+        <button class="btn" id="prevBtn">←</button>
+        <button class="btn" id="nextBtn">→</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const presentation = document.getElementById('presentation');
+
+        function updateSlide() {
+            presentation.style.transform = `translateX(-${currentSlide * 100}vw)`;
+            slides.forEach((s, i) => {
+                if (i === currentSlide) s.classList.add('active');
+                else s.classList.remove('active');
+            });
+        }
+
+        document.getElementById('nextBtn').addEventListener('click', () => {
+            if (currentSlide < slides.length - 1) {
+                currentSlide++;
+                updateSlide();
+            }
+        });
+
+        document.getElementById('prevBtn').addEventListener('click', () => {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateSlide();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') document.getElementById('nextBtn').click();
+            if (e.key === 'ArrowLeft') document.getElementById('prevBtn').click();
+        });
+
+        setTimeout(() => slides[0].classList.add('active'), 100);
+    </script>
+
+</body>
+
+</html>
