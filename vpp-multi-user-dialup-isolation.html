@@ -378,6 +378,7 @@ vppctl set interface input acl intfc tap1 ip4-table 0
 
 # 4. 跨表泄露与回程指引
 vppctl ip route add table 201 0.0.0.0/0 via ip4-lookup-in-table 0
+vppctl ip route add table 202 0.0.0.0/0 via ip4-lookup-in-table 0
 vppctl ip route add table 201 192.168.1.1/32 via pppoe_session0
 vppctl ip route add table 202 192.168.2.1/32 via pppoe_session1
                     </pre>
