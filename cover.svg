@@ -1,0 +1,91 @@
+<svg width="1280" height="720" viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e293b;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="primaryGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#38bdf8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#818cf8;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="5" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1280" height="720" fill="url(#bgGradient)" />
+  
+  <!-- Subtle Grid Pattern -->
+  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" stroke-width="0.5" stroke-opacity="0.05" />
+  </pattern>
+  <rect width="1280" height="720" fill="url(#grid)" />
+
+  <!-- Main Title Area -->
+  <g transform="translate(80, 180)">
+    <rect x="-10" y="0" width="8" height="120" fill="#38bdf8" rx="4" />
+    <text x="30" y="55" font-family="'Inter', sans-serif" font-size="64" font-weight="800" fill="white">
+      VPP Startup.conf
+    </text>
+    <text x="30" y="125" font-family="'Inter', sans-serif" font-size="64" font-weight="800" fill="url(#primaryGradient)">
+      内存配置完全指南
+    </text>
+  </g>
+
+  <!-- Subtitle -->
+  <text x="110" y="380" font-family="'Inter', sans-serif" font-size="32" font-weight="400" fill="#94a3b8">
+    20,000 PPPoE 实战调优总结
+  </text>
+
+  <!-- Memory Segments Visualization -->
+  <g transform="translate(850, 150)">
+    <!-- Main Heap -->
+    <rect x="0" y="0" width="300" height="120" rx="15" fill="rgba(30, 41, 59, 0.7)" stroke="#ef4444" stroke-width="2" />
+    <text x="150" y="50" text-anchor="middle" font-family="'Inter', sans-serif" font-size="20" font-weight="700" fill="#ef4444">Main Heap</text>
+    <rect x="20" y="70" width="260" height="30" rx="5" fill="rgba(239, 68, 68, 0.2)" />
+    <rect x="20" y="70" width="180" height="30" rx="5" fill="#ef4444" />
+    <text x="150" y="90" text-anchor="middle" font-family="'Inter', sans-serif" font-size="14" fill="white">3G (Crucial)</text>
+
+    <!-- Stats Segment -->
+    <g transform="translate(0, 150)">
+      <rect x="0" y="0" width="300" height="120" rx="15" fill="rgba(30, 41, 59, 0.7)" stroke="#38bdf8" stroke-width="2" />
+      <text x="150" y="50" text-anchor="middle" font-family="'Inter', sans-serif" font-size="20" font-weight="700" fill="#38bdf8">Stats Segment</text>
+      <rect x="20" y="70" width="260" height="30" rx="5" fill="rgba(56, 189, 248, 0.2)" />
+      <rect x="20" y="70" width="110" height="30" rx="5" fill="#38bdf8" />
+      <text x="150" y="90" text-anchor="middle" font-family="'Inter', sans-serif" font-size="14" fill="white">256M (Safe)</text>
+    </g>
+
+    <!-- API Segment -->
+    <g transform="translate(0, 300)">
+      <rect x="0" y="0" width="300" height="80" rx="15" fill="rgba(30, 41, 59, 0.7)" stroke="#818cf8" stroke-width="2" />
+      <text x="150" y="35" text-anchor="middle" font-family="'Inter', sans-serif" font-size="20" font-weight="700" fill="#818cf8">API Segment</text>
+      <text x="150" y="65" text-anchor="middle" font-family="'Inter', sans-serif" font-size="14" fill="#94a3b8">Default 64M - Low Risk</text>
+    </g>
+  </g>
+
+  <!-- 20K Badge -->
+  <g transform="translate(110, 480)">
+    <circle cx="50" cy="50" r="60" fill="url(#primaryGradient)" filter="url(#glow)" />
+    <text x="50" y="45" text-anchor="middle" font-family="'Inter', sans-serif" font-size="36" font-weight="900" fill="white">20K</text>
+    <text x="50" y="75" text-anchor="middle" font-family="'Inter', sans-serif" font-size="16" font-weight="700" fill="white">SESSIONS</text>
+  </g>
+
+  <!-- Tags/Footer -->
+  <g transform="translate(250, 480)">
+    <rect x="0" y="20" width="180" height="40" rx="20" fill="rgba(16, 185, 129, 0.1)" stroke="#10b981" />
+    <text x="90" y="45" text-anchor="middle" font-family="'Inter', sans-serif" font-size="18" font-weight="600" fill="#10b981">真实场景压测</text>
+    
+    <rect x="200" y="20" width="180" height="40" rx="20" fill="rgba(245, 158, 11, 0.1)" stroke="#f59e0b" />
+    <text x="290" y="45" text-anchor="middle" font-family="'Inter', sans-serif" font-size="18" font-weight="600" fill="#f59e0b">内存优化必看</text>
+  </g>
+
+  <!-- VPP Logo Placeholder/Icon -->
+  <g transform="translate(1150, 640) scale(0.8)">
+    <text x="0" y="0" font-family="'Inter', sans-serif" font-size="24" font-weight="600" fill="#94a3b8" text-anchor="end">
+      FD.io VPP Solution
+    </text>
+  </g>
+
+</svg>
