@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>为什么 IPsec VPN 无法穿透 NAT —— NAT-T 机制详解</title>
+  <style>
+    /* ===== Geek PPT Theme ===== */
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at top, #0b132b, #02040f 70%);
+      color: #e0e6f0;
+      font-family: "JetBrains Mono", "Fira Code", "Segoe UI", monospace;
+      overflow: hidden;
+    }
+
+    .deck {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+
+    section {
+      width: 100vw;
+      height: 100vh;
+      padding: 40px 60px;
+      box-sizing: border-box;
+      position: absolute;
+      top: 0;
+      left: 0;
+      opacity: 0;
+      transform: scale(0.98);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+      
+      /* Center everything */
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    section.active {
+      opacity: 1;
+      transform: scale(1);
+      z-index: 10;
+    }
+
+    h1 {
+      font-size: 72px;
+      margin-bottom: 20px;
+      color: #66fcf1;
+      letter-spacing: 1px;
+    }
+
+    h2 {
+      font-size: 48px;
+      margin-bottom: 20px;
+      color: #7dd3fc;
+    }
+
+    p {
+      font-size: 22px;
+      color: #cbd5f5;
+      max-width: 900px;
+      margin: 10px auto;
+    }
+
+    ul {
+      margin-top: 10px;
+      padding-left: 0;
+      list-style: none;
+      display: inline-block;
+      text-align: left;
+    }
+
+    li {
+      font-size: 24px;
+      margin: 18px 0;
+      padding-left: 28px;
+      position: relative;
+      line-height: 1.4;
+    }
+
+    li::before {
+      content: ">";
+      position: absolute;
+      left: 0;
+      color: #38bdf8;
+    }
+
+    .footer {
+      position: absolute;
+      bottom: 24px;
+      right: 40px;
+      font-size: 14px;
+      color: #64748b;
+    }
+
+    .progress {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #38bdf8, #66fcf1);
+      transition: width 0.3s ease;
+    }
+
+    /* hint */
+    .hint {
+      position: absolute;
+      bottom: 24px;
+      left: 40px;
+      font-size: 14px;
+      color: #475569;
+    }
+  </style>
+</head>
+<body>
+
+<div class="deck">
+
+<section class="active">
+  <h1 style="background: linear-gradient(90deg, #66fcf1, #38bdf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+    IPsec NAT-T 机制解析
+  </h1>
+  <p style="font-size: 32px; color: #7dd3fc; font-weight: bold; letter-spacing: 2px;">
+    NAT Traversal: From Conflict to Resolution
+  </p>
+  <div style="margin: 40px auto; width: 240px; height: 4px; background: #38bdf8; border-radius: 2px; box-shadow: 0 0 15px #38bdf8;"></div>
+  
+  <ul style="display: flex; justify-content: center; gap: 40px; margin-top: 30px; text-align: center;">
+    <li style="font-size: 18px; color: #64748b; padding-left: 0;">RFC 3947 (NAT-D)</li>
+    <li style="font-size: 18px; color: #64748b; padding-left: 0;">RFC 3948 (UDP Encap)</li>
+    <li style="font-size: 18px; color: #64748b; padding-left: 0;">IKEv2 / IPsec</li>
+  </ul>
+  
+  <style>
+    /* Special override to remove bullets for horizontal cover list */
+    section.active li::before { content: none; }
+  </style>
+  
+  <svg width="400" height="200" viewBox="0 0 400 200" style="margin-top: 40px; opacity: 0.4;">
+    <circle cx="100" cy="100" r="10" fill="#38bdf8"/>
+    <circle cx="300" cy="100" r="10" fill="#a78bfa"/>
+    <path d="M 110 100 L 290 100" stroke="#64748b" stroke-width="2" stroke-dasharray="8 4"/>
+    <rect x="180" y="80" width="40" height="40" rx="8" fill="none" stroke="#fbbf24" stroke-width="2"/>
+    <text x="200" y="140" text-anchor="middle" fill="#fbbf24" font-size="14" font-family="monospace">NAT Device</text>
+    <text x="100" y="70" text-anchor="middle" fill="#38bdf8" font-size="12">Initiator</text>
+    <text x="300" y="70" text-anchor="middle" fill="#a78bfa" font-size="12">Responder</text>
+  </svg>
+</section>
+
+<section>
+  <h2>IPsec VPN 与 NAT 的根本冲突</h2>
+  <ul>
+    <li>IPsec 依赖端到端的 IP 地址、端口不变性</li>
+    <li>NAT 会修改 IP 地址与端口信息</li>
+    <li>这破坏了 IPsec 的安全假设与数据完整性</li>
+    <li>NAT-T 机制应运而生，作为一种绕过 NAT 限制的解决方案</li>
+  </ul>
+</section>
+
+<section>
+  <h2>什么是 NAT-T？</h2>
+  <ul>
+    <li>NAT-T（NAT Traversal）是 IPsec 的传输扩展机制</li>
+    <li>用于解决 IPsec 在 NAT 网络中的不可达问题</li>
+    <li>标准定义于 RFC 3947 / RFC 3948</li>
+  </ul>
+</section>
+
+<section>
+  <h2>原生 IPsec 在 NAT 下的问题</h2>
+  <ul>
+    <li>ESP 使用 IP 协议号 50，没有 L4 端口（TCP/UDP）</li>
+    <li>NAT 无法基于“端口”为 ESP 建立映射状态表</li>
+    <li>IKE 会话与原始 IP 强绑定，NAT 转换后校验失败</li>
+  </ul>
+
+  <h3 style="color: #64748b; font-size: 18px; margin-bottom: 15px;">原生 ESP 封装结构 (无 NAT-T)</h3>
+  <svg width="900" height="380" viewBox="0 0 900 380" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="grad-ip-raw" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" style="stop-color:#38bdf8;stop-opacity:0.2" />
+        <stop offset="100%" style="stop-color:#38bdf8;stop-opacity:0.05" />
+      </linearGradient>
+      <linearGradient id="grad-esp-raw" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" style="stop-color:#a78bfa;stop-opacity:0.2" />
+        <stop offset="100%" style="stop-color:#a78bfa;stop-opacity:0.05" />
+      </linearGradient>
+    </defs>
+
+    <style>
+      .hdr-frame-raw { stroke-width: 2.5; rx: 8; fill-opacity: 0.8; }
+      .slot-raw { fill: #0f172a; stroke: #334155; stroke-width: 1; rx: 4; }
+      .txt-hdr-raw { fill: #ffffff; font-size: 15px; font-weight: bold; font-family: monospace; }
+      .txt-data-raw { fill: #cbd5e1; font-size: 13px; font-family: monospace; }
+      .txt-warn-raw { fill: #f87171; font-size: 13px; font-family: monospace; font-weight: bold; }
+      .txt-note-raw { fill: #64748b; font-size: 12px; font-family: monospace; font-style: italic; }
+    </style>
+
+    <!-- IP Header -->
+    <rect x="40" y="20" width="820" height="90" class="hdr-frame-raw" style="stroke:#38bdf8; fill:url(#grad-ip-raw)"/>
+    <text x="60" y="45" class="txt-hdr-raw">IP Header (20B)</text>
+    
+    <rect x="60" y="60" width="250" height="35" class="slot-raw"/>
+    <text x="185" y="82" text-anchor="middle" class="txt-data-raw">Source IP</text>
+    
+    <rect x="320" y="60" width="250" height="35" class="slot-raw"/>
+    <text x="445" y="82" text-anchor="middle" class="txt-data-raw">Destination IP</text>
+    
+    <rect x="580" y="60" width="260" height="35" class="slot-raw" style="stroke:#f87171; stroke-width:2;"/>
+    <text x="710" y="82" text-anchor="middle" class="txt-warn-raw">Protocol = 50 (ESP)</text>
+
+    <!-- Visual Gap showing MISSING L4 -->
+    <line x1="450" y1="110" x2="450" y2="140" stroke="#475569" stroke-width="2" stroke-dasharray="4 4"/>
+    <text x="460" y="130" class="txt-warn-raw" style="font-size: 11px;">⚠️ MISSING TCP/UDP PORT</text>
+
+    <!-- ESP Packet -->
+    <rect x="40" y="150" width="820" height="150" class="hdr-frame-raw" style="stroke:#a78bfa; fill:url(#grad-esp-raw)"/>
+    <text x="60" y="175" class="txt-hdr-raw" style="fill:#a78bfa">ESP Header & Payload</text>
+    
+    <rect x="60" y="190" width="370" height="35" class="slot-raw"/>
+    <text x="245" y="212" text-anchor="middle" class="txt-data-raw">SPI (Security Parameters Index)</text>
+    
+    <rect x="440" y="190" width="370" height="35" class="slot-raw"/>
+    <text x="625" y="212" text-anchor="middle" class="txt-data-raw">Sequence Number</text>
+
+    <!-- Ciphertext Area -->
+    <rect x="60" y="235" width="750" height="50" class="slot-raw" style="stroke-dasharray: 4; fill-opacity: 0.1"/>
+    <text x="435" y="265" text-anchor="middle" class="txt-data-raw" style="fill:#94a3b8">Encrypted Data (Inner IP / TCP / UDP / App Data)</text>
+
+    <!-- Conclusion Note -->
+    <rect x="40" y="320" width="820" height="40" rx="4" fill="#ef4444" fill-opacity="0.1" stroke="#ef4444" stroke-width="1"/>
+    <text x="450" y="345" text-anchor="middle" class="txt-warn-raw">
+      NAT 设备结论：无法从 Protocol 50 中提取端口 -> 无法为多个内网主机分配唯一的公网映射
+    </text>
+  </svg>
+</section>
+
+<section>
+  <h2>RFC 的结论</h2>
+  <ul>
+    <li>IPsec 与 NAT 的冲突无法被彻底修复</li>
+    <li>只能通过改变传输方式来规避</li>
+    <li>NAT-T 是一次工程上的妥协方案</li>
+  </ul>
+</section>
+
+<section>
+  <h2>NAT-T 的核心思想</h2>
+  <ul>
+    <li>放弃原生 ESP 直传</li>
+    <li>将 ESP 封装进 UDP</li>
+    <li>让 NAT 把 IPsec 当作普通 UDP 流量</li>
+  </ul>
+
+  <h3 style="color: #64748b; font-size: 18px; margin-bottom: 15px;">ESP over UDP (NAT-T) 封装结构</h3>
+  <svg width="900" height="420" viewBox="0 0 900 420" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="grad-ip-v" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" style="stop-color:#38bdf8;stop-opacity:0.2" />
+        <stop offset="100%" style="stop-color:#38bdf8;stop-opacity:0.05" />
+      </linearGradient>
+      <linearGradient id="grad-udp-v" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" style="stop-color:#fcd34d;stop-opacity:0.2" />
+        <stop offset="100%" style="stop-color:#fcd34d;stop-opacity:0.05" />
+      </linearGradient>
+      <linearGradient id="grad-esp-v" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" style="stop-color:#a78bfa;stop-opacity:0.2" />
+        <stop offset="100%" style="stop-color:#a78bfa;stop-opacity:0.05" />
+      </linearGradient>
+    </defs>
+
+    <style>
+      .hdr-frame { stroke-width: 2.5; rx: 8; }
+      .field-slot { fill: #0f172a; stroke: #334155; stroke-width: 1; rx: 4; }
+      .txt-header { fill: #ffffff; font-size: 15px; font-weight: bold; font-family: monospace; letter-spacing: 0.5px; }
+      .txt-data { fill: #cbd5e1; font-size: 13px; font-family: monospace; }
+      .txt-annot { fill: #64748b; font-size: 12px; font-family: monospace; font-style: italic; }
+      .hl-port { fill: #fbbf24; font-weight: bold; }
+    </style>
+
+    <!-- IP Header (Expanded) -->
+    <rect x="40" y="10" width="820" height="80" class="hdr-frame" style="stroke:#38bdf8; fill:url(#grad-ip-v)"/>
+    <text x="60" y="35" class="txt-header">Outer IP Header (20B)</text>
+    
+    <rect x="60" y="48" width="220" height="30" class="field-slot"/>
+    <text x="170" y="68" text-anchor="middle" class="txt-data">Public Source IP</text>
+    
+    <rect x="290" y="48" width="220" height="30" class="field-slot"/>
+    <text x="400" y="68" text-anchor="middle" class="txt-data">Gateway Dest IP</text>
+    
+    <rect x="520" y="48" width="220" height="30" class="field-slot"/>
+    <text x="630" y="68" text-anchor="middle" class="txt-data">Protocol: UDP (17)</text>
+
+    <!-- UDP Header (Expanded) -->
+    <rect x="40" y="105" width="820" height="80" class="hdr-frame" style="stroke:#fcd34d; fill:url(#grad-udp-v)"/>
+    <text x="60" y="130" class="txt-header" style="fill:#fcd34d">UDP Header (8B)</text>
+    
+    <rect x="60" y="143" width="370" height="30" class="field-slot" style="stroke:#fcd34d; stroke-width: 1.5"/>
+    <text x="245" y="163" text-anchor="middle" class="txt-data hl-port">Source Port: 4500</text>
+    
+    <rect x="440" y="143" width="370" height="30" class="field-slot" style="stroke:#fcd34d; stroke-width: 1.5"/>
+    <text x="625" y="163" text-anchor="middle" class="txt-data hl-port">Dest Port: 4500</text>
+
+    <!-- ESP Header & Payload -->
+    <rect x="40" y="200" width="820" height="160" class="hdr-frame" style="stroke:#a78bfa; fill:url(#grad-esp-v)"/>
+    <text x="60" y="225" class="txt-header" style="fill:#a78bfa">ESP Packet (Encapsulated Data)</text>
+    
+    <rect x="60" y="238" width="370" height="30" class="field-slot"/>
+    <text x="245" y="258" text-anchor="middle" class="txt-data">SPI (32-bit)</text>
+    
+    <rect x="440" y="238" width="370" height="30" class="field-slot"/>
+    <text x="625" y="258" text-anchor="middle" class="txt-data">Sequence Number (32-bit)</text>
+
+    <!-- Ciphertext Area -->
+    <rect x="60" y="278" width="750" height="70" class="field-slot" style="stroke-dasharray: 4; stroke:#6366f1; fill-opacity: 0.1"/>
+    <text x="435" y="305" text-anchor="middle" class="txt-data" style="font-weight:bold; fill:#e0e7ff">Encrypted Payload (Inner IP | TCP/UDP | Data)</text>
+    <text x="435" y="325" text-anchor="middle" class="txt-annot">Protected by Integrity Check Value (ICV) / ESP Trailer</text>
+
+    <!-- Tracking Note -->
+    <text x="40" y="395" class="txt-annot" style="fill:#94a3b8; font-size: 13px; font-weight: bold; font-style: normal;">
+      🚀 关键点：通过 UDP 封装，NAT 设备仅视其为普通 4500 端口流量，从而维持 Session 状态。
+    </text>
+  </svg>
+</section>
+
+<section>
+  <h2>为什么选择 UDP 4500？</h2>
+  <ul>
+    <li>避免与 IKE 初始协商端口 500 冲突</li>
+    <li>RFC 3948 明确定义 NAT-T 使用 4500</li>
+    <li>便于防火墙统一放行</li>
+  </ul>
+</section>
+
+<section>
+  <h2>关键前提：必须检测 NAT 是否存在</h2>
+  <ul>
+    <li>并非所有场景都需要 NAT-T</li>
+    <li>错误启用会带来额外封装开销</li>
+    <li>因此必须在 IKE 阶段自动判断</li>
+  </ul>
+</section>
+
+<section>
+  <h2>NAT Detection（RFC 3947 / RFC 7296 · IKEv2）</h2>
+  <p style="font-size: 16px; color: #94a3b8; margin-top: -20px;">
+    * 本说明以 IKEv2 的 <code>IKE_SA_INIT</code> 交换为例
+  </p>
+  <ul>
+    <li><strong>载荷交换：</strong>
+      Initiator 与 Responder 均在 <code>IKE_SA_INIT</code> 的 Request / Response 中
+      各自发送 <code>NAT_DETECTION_SOURCE_IP</code> 与
+      <code>NAT_DETECTION_DESTINATION_IP</code> 两个 NAT-D 载荷。
+    </li>
+
+    <li><strong>Hash 计算公式：</strong>
+      <code>Hash = HASH_ALG(SPI-I | SPI-R | IP | Port)</code>
+    </li>
+
+    <li><strong>NAT-D 的本质：</strong>
+      NAT-D 并不是“声明自己是否在 NAT 后”，而是向对端提供一份
+      <strong>可被重新计算并验证的 Hash 材料</strong>。
+      是否存在 NAT，始终由<strong>本端自行判断</strong>。
+    </li>
+
+    <li><strong>NAT_DETECTION_SOURCE_IP：</strong>
+      <ul>
+        <li><strong>发送方：</strong>
+          使用<strong>本端认为的</strong>源 IP 与源端口计算 Hash 并发送。
+        </li>
+        <li><strong>接收方：</strong>
+          使用<strong>实际接收到的</strong>源 IP 与源端口重新计算 Hash。
+          若不一致，说明<strong>对端到本端路径上</strong>存在 NAT。
+        </li>
+      </ul>
+    </li>
+
+    <li><strong>NAT_DETECTION_DESTINATION_IP：</strong>
+      <ul>
+        <li><strong>发送方：</strong>
+          使用<strong>本端认为的</strong>目的 IP 与目的端口计算 Hash 并发送。
+        </li>
+        <li><strong>接收方：</strong>
+          使用<strong>本端本地接口地址与端口</strong>重新计算 Hash。
+          若不一致，说明<strong>本端之前</strong>存在 NAT 设备。
+        </li>
+      </ul>
+    </li>
+
+    <li><strong>最终判定原则：</strong>
+      Initiator 与 Responder
+      <strong>各自独立</strong>比对 NAT-D Hash，
+      只要任意一个方向检测到不匹配，
+      即认为路径中存在 NAT，并进入 NAT-T 模式。
+    </li>
+  </ul>
+</section>
+
+
+<section>
+  <h2>NAT-D Hash 映射与封装 (IKEv2)</h2>
+
+  <p>计算结果去向：在 IKEv2 中，对高亮字段进行 Hash 后，结果被封装在 <code>IKE_SA_INIT</code> 响应/请求报文的 <code>NAT-D Payload</code> 载荷中。对端通过比对此载荷与本地计算值来判断 NAT 存在。</p>
+
+  <h3 style="color: #64748b; font-size: 18px; margin-bottom: 10px;">IKEv2 报文结构与 Hash 计算输入：</h3>
+  <svg width="900" height="455" viewBox="0 0 900 455" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- 更细腻的渐变效果 -->
+    <linearGradient id="grad-ip" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#38bdf8;stop-opacity:0.25" />
+      <stop offset="50%" style="stop-color:#38bdf8;stop-opacity:0.15" />
+      <stop offset="100%" style="stop-color:#38bdf8;stop-opacity:0.05" />
+    </linearGradient>
+    <linearGradient id="grad-udp" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:0.25" />
+      <stop offset="50%" style="stop-color:#fbbf24;stop-opacity:0.15" />
+      <stop offset="100%" style="stop-color:#fbbf24;stop-opacity:0.05" />
+    </linearGradient>
+    <linearGradient id="grad-ike" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#a78bfa;stop-opacity:0.25" />
+      <stop offset="50%" style="stop-color:#a78bfa;stop-opacity:0.15" />
+      <stop offset="100%" style="stop-color:#a78bfa;stop-opacity:0.05" />
+    </linearGradient>
+    <!-- 增强的阴影效果 -->
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-opacity="0.4"/>
+    </filter>
+    <!-- 内发光效果 -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <style>
+    .section-box { fill-opacity: 0.08; stroke-width: 2.5; rx: 10; }
+    .ip { stroke: #38bdf8; fill: url(#grad-ip); }
+    .udp { stroke: #fbbf24; fill: url(#grad-udp); }
+    .ike { stroke: #a78bfa; fill: url(#grad-ike); }
+    .field-box { fill: #1a2332; stroke-width: 1.5; stroke: #475569; rx: 4; transition: all 0.3s ease; }
+    .field-box:hover { fill: #1e293b; stroke: #64748b; }
+    .field-highlight { stroke-width: 3.5; }
+    .section-title { fill: #ffffff; font-size: 19px; font-family: monospace; font-weight: bold; letter-spacing: 1.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+    .field-label { font-size: 13px; font-family: monospace; fill: #e2e8f0; font-weight: 500; }
+    .field-sublabel { font-size: 10.5px; font-family: monospace; fill: #94a3b8; font-style: italic; }
+    .field-highlight-label { fill: #ffffff; font-size: 14.5px; font-weight: bold; letter-spacing: 0.5px; }
+    .c-ip { stroke: #7dd3fc; fill: #7dd3fc; fill-opacity: 0.15; }
+    .c-port { stroke: #fcd34d; fill: #fcd34d; fill-opacity: 0.15; }
+    .c-spi { stroke: #d8b4fe; fill: #d8b4fe; fill-opacity: 0.15; }
+    .note-label { fill: #94a3b8; font-size: 12.5px; font-family: monospace; font-weight: 500; }
+    .nat-modified { fill: #ef4444; }
+  </style>
+
+  <!-- IP HEADER SECTION -->
+  <rect x="20" y="20" width="860" height="118" rx="10" class="section-box ip" />
+  <text x="40" y="47" class="section-title">IP Header (20B)</text>
+
+  <g class="field-row">
+    <rect x="40" y="62" width="88" height="32" class="field-box" />
+    <text x="84" y="78" text-anchor="middle" class="field-label">Version</text>
+    <text x="84" y="90" text-anchor="middle" class="field-sublabel">4 bits</text>
+
+    <rect x="135" y="62" width="83" height="32" class="field-box" />
+    <text x="176.5" y="78" text-anchor="middle" class="field-label">IHL</text>
+    <text x="176.5" y="90" text-anchor="middle" class="field-sublabel">4 bits</text>
+
+    <rect x="225" y="62" width="133" height="32" class="field-box" />
+    <text x="291.5" y="78" text-anchor="middle" class="field-label">Total Length</text>
+    <text x="291.5" y="90" text-anchor="middle" class="field-sublabel">16 bits</text>
+
+    <rect x="365" y="62" width="113" height="32" class="field-box" />
+    <text x="421.5" y="78" text-anchor="middle" class="field-label">Protocol</text>
+    <text x="421.5" y="90" text-anchor="middle" class="field-sublabel">0x11=UDP</text>
+
+    <rect x="485" y="62" width="355" height="32" class="field-box field-highlight c-ip" filter="url(#shadow)" />
+    <text x="662.5" y="78" text-anchor="middle" class="field-highlight-label">Src IP (32b) | Dst IP (32b)</text>
+    <text x="662.5" y="90" text-anchor="middle" class="field-sublabel">❌ Modified by NAT</text>
+  </g>
+
+  <!-- IP 第二行字段 -->
+  <g class="field-row-secondary">
+    <rect x="40" y="100" width="88" height="28" class="field-box" />
+    <text x="84" y="115" text-anchor="middle" class="field-label">TTL</text>
+
+    <rect x="135" y="100" width="83" height="28" class="field-box" />
+    <text x="176.5" y="115" text-anchor="middle" class="field-label">Flags</text>
+
+    <rect x="225" y="100" width="133" height="28" class="field-box" />
+    <text x="291.5" y="115" text-anchor="middle" class="field-label">Frag ID</text>
+
+    <rect x="365" y="100" width="113" height="28" class="field-box" />
+    <text x="421.5" y="115" text-anchor="middle" class="field-label">Offset</text>
+
+    <rect x="485" y="100" width="165" height="28" class="field-box" />
+    <text x="567.5" y="115" text-anchor="middle" class="field-label">Checksum</text>
+
+    <rect x="657" y="100" width="183" height="28" class="field-box" />
+    <text x="748.5" y="115" text-anchor="middle" class="field-label">Options (if any)</text>
+  </g>
+
+  <!-- UDP HEADER SECTION -->
+  <rect x="20" y="158" width="860" height="105" rx="10" class="section-box udp" />
+  <text x="40" y="185" class="section-title">UDP Header (8B)</text>
+
+  <g class="field-row">
+    <rect x="40" y="200" width="410" height="35" class="field-box field-highlight c-port" filter="url(#shadow)" />
+    <text x="245" y="217" text-anchor="middle" class="field-highlight-label">Src Port (16b) | Dst Port (16b)</text>
+    <text x="245" y="230" text-anchor="middle" class="field-sublabel">❌ Modified by NAT · Port 500 or 4500</text>
+
+    <rect x="457" y="200" width="185" height="35" class="field-box" />
+    <text x="549.5" y="217" text-anchor="middle" class="field-label">Length</text>
+    <text x="549.5" y="230" text-anchor="middle" class="field-sublabel">16 bits · UDP+Data</text>
+
+    <rect x="649" y="200" width="191" height="35" class="field-box" />
+    <text x="744.5" y="217" text-anchor="middle" class="field-label">Checksum</text>
+    <text x="744.5" y="230" text-anchor="middle" class="field-sublabel">16 bits · Often 0</text>
+  </g>
+
+  <!-- IKE HEADER SECTION -->
+  <rect x="20" y="283" width="860" height="115" rx="10" class="section-box ike" />
+  <text x="40" y="310" class="section-title">IKE Header / Payload (min 28B)</text>
+
+  <g class="field-row">
+    <rect x="40" y="325" width="410" height="35" class="field-box field-highlight c-spi" filter="url(#shadow)" />
+    <text x="245" y="342" text-anchor="middle" class="field-highlight-label">Initiator SPI (64b) | Responder SPI (64b)</text>
+    <text x="245" y="355" text-anchor="middle" class="field-sublabel">Session ID Pair · Critical for NAT-D Hash</text>
+
+    <rect x="457" y="325" width="185" height="35" class="field-box" />
+    <text x="549.5" y="342" text-anchor="middle" class="field-label">Next / Flags</text>
+    <text x="549.5" y="355" text-anchor="middle" class="field-sublabel">16b · Payload type</text>
+
+    <rect x="649" y="325" width="191" height="35" class="field-box" />
+    <text x="744.5" y="342" text-anchor="middle" class="field-label">Ver / Exchange</text>
+    <text x="744.5" y="355" text-anchor="middle" class="field-sublabel">v2=0x20 · Type 8b</text>
+  </g>
+
+  <!-- IKE 附加字段 -->
+  <g class="field-row-secondary">
+    <rect x="40" y="368" width="185" height="22" class="field-box" />
+    <text x="132.5" y="380" text-anchor="middle" class="field-label">Message ID (32b)</text>
+
+    <rect x="232" y="368" width="185" height="22" class="field-box" />
+    <text x="324.5" y="380" text-anchor="middle" class="field-label">Length (32b)</text>
+
+    <rect x="424" y="368" width="220" height="22" class="field-box" />
+    <text x="534" y="380" text-anchor="middle" class="field-label">General Payloads</text>
+
+    <!-- NAT-D Payload Box -->
+    <rect x="652" y="368" width="188" height="22" class="field-box ike" style="fill-opacity: 0.3; stroke-dasharray: 4;" />
+    <text x="746" y="380" text-anchor="middle" class="field-label" style="fill: #d8b4fe; font-weight: bold;">NAT-D Payload</text>
+  </g>
+
+  <!-- Connection line showing Hash result source -->
+  <path d="M 40 360 L 40 405 L 746 405 L 746 392" fill="none" stroke="#d8b4fe" stroke-width="1.5" stroke-dasharray="4" marker-end="url(#arrowhead)" opacity="0.6" />
+  <text x="390" y="418" text-anchor="middle" class="field-sublabel" style="fill: #a78bfa;">Step: 计算 Hash 并封装入载荷</text>
+
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#d8b4fe" />
+    </marker>
+  </defs>
+
+  <!-- Legend -->
+  <text x="40" y="440" class="note-label">🔹 高亮字段 = Hash 输入参数 | ❌ = NAT 修改点 | 🟣 虚线色块 = 最终存放 Hash 值的载荷 (NAT-D Payload)</text>
+</svg>
+
+  <p class="note">⚠️ NAT 如果修改了 <span class="c-ip">IP</span> 或 <span class="c-port">端口</span>，对端计算出的 NAT-D Hash 将不一致，从而触发 NAT-T。</p>
+</section>
+
+<section>
+  <h2>检测到 NAT 之后</h2>
+  <ul>
+    <li>IKE 通信切换到 UDP 4500</li>
+    <li>ESP 开始进行 UDP 封装</li>
+    <li>连接进入 NAT-T 工作模式</li>
+  </ul>
+</section>
+
+<section>
+  <h2>RFC 3948 定义的 NAT-T 封装</h2>
+  <ul>
+    <li>UDP 头后插入 Non-ESP Marker</li>
+    <li>用于区分 IKE 与 ESP over UDP</li>
+    <li>保证向后兼容</li>
+  </ul>
+</section>
+
+<section>
+  <h2>总结一句话</h2>
+  <ul>
+    <li>NAT-T 不是增强安全，而是生存手段</li>
+    <li>它让 IPsec 在 NAT 世界中继续工作</li>
+    <li>NAT-D 是整个机制的触发核心</li>
+  </ul>
+</section>
+
+<section>
+  <h2 style="background: linear-gradient(90deg, #66fcf1, #38bdf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">加入技术交流群</h2>
+  <p style="color: #cbd5f5; margin-bottom: 30px;">欢迎扫码加入我们的 QQ 技术交流群，共同探讨 IPsec / VPP / 网络安全等前沿技术。</p>
+  
+  <div style="position: relative; padding: 15px;">
+    <img src="qq-group.jpg" alt="QQ Group QR Code" style="width: 420px; height: 620px; border-radius: 20px; border: 4px solid #38bdf8; box-shadow: 0 0 40px rgba(56, 189, 248, 0.4);">
+    <!-- Decorative corner markers -->
+    <div style="position: absolute; top: 0; left: 0; width: 60px; height: 60px; border-top: 5px solid #66fcf1; border-left: 5px solid #66fcf1; border-radius: 20px 0 0 0;"></div>
+    <div style="position: absolute; bottom: 0; right: 0; width: 60px; height: 60px; border-bottom: 5px solid #66fcf1; border-right: 5px solid #66fcf1; border-radius: 0 0 20px 0;"></div>
+  </div>
+  
+  <p style="margin-top: 30px; font-size: 26px; color: #7dd3fc; font-weight: bold; letter-spacing: 2px;">
+    期待与你交流！
+  </p>
+</section>
+
+<div class="hint">← / → 或 空格 翻页</div>
+<div class="footer">IPsec NAT-T · RFC 3947 / 3948</div>
+<div class="progress" id="progress"></div>
+
+</div>
+
+<script>
+  const slides = document.querySelectorAll('section');
+  const progress = document.getElementById('progress');
+  let index = 0;
+
+  function show(i) {
+    slides.forEach((s, idx) => {
+      s.classList.toggle('active', idx === i);
+    });
+    progress.style.width = ((i + 1) / slides.length * 100) + '%';
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ') {
+      index = Math.min(index + 1, slides.length - 1);
+      show(index);
+    }
+    if (e.key === 'ArrowLeft') {
+      index = Math.max(index - 1, 0);
+      show(index);
+    }
+  });
+
+  // ===== NAT-D Hash Highlight Animation =====
+  const highlightGroups = [
+    '.c-ip',
+    '.c-port',
+    '.c-spi'
+  ];
+
+  let step = 0;
+  setInterval(() => {
+    highlightGroups.forEach(sel => {
+      document.querySelectorAll(sel).forEach(el => {
+        el.style.filter = 'none';
+        el.style.textShadow = 'none';
+      });
+    });
+
+    document.querySelectorAll(highlightGroups[step]).forEach(el => {
+      el.style.filter = 'brightness(1.6)';
+      el.style.textShadow = '0 0 8px currentColor';
+    });
+
+    step = (step + 1) % highlightGroups.length;
+  }, 1600);
+</script>
+
+</body>
+</html>
