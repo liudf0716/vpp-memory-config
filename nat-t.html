@@ -231,7 +231,7 @@
 
     <!-- Ciphertext Area -->
     <rect x="60" y="235" width="750" height="50" class="slot-raw" style="stroke-dasharray: 4; fill-opacity: 0.1"/>
-    <text x="435" y="265" text-anchor="middle" class="txt-data-raw" style="fill:#94a3b8">Encrypted Data (Inner IP / TCP / UDP / App Data)</text>
+    <text x="435" y="265" text-anchor="middle" class="txt-data-raw" style="fill:#94a3b8">Encrypted Data</text>
 
     <!-- Conclusion Note -->
     <rect x="40" y="320" width="820" height="40" rx="4" fill="#ef4444" fill-opacity="0.1" stroke="#ef4444" stroke-width="1"/>
@@ -348,58 +348,26 @@
 </section>
 
 <section>
-  <h2>NAT Detection（RFC 3947 / RFC 7296 · IKEv2）</h2>
+  <h2>NAT Detection（RFC 3947 / IKEv2）</h2>
   <p style="font-size: 16px; color: #94a3b8; margin-top: -20px;">
-    * 本说明以 IKEv2 的 <code>IKE_SA_INIT</code> 交换为例
+    IKE_SA_INIT 阶段
   </p>
+  
+  <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; border: 1px solid #38bdf8; margin: 30px 0;">
+    <p style="font-family: monospace; font-size: 24px; color: #a78bfa; margin: 0;">
+      Hash = SHA1(SPI-I | SPI-R | IP | Port)
+    </p>
+  </div>
+
   <ul>
-    <li><strong>载荷交换：</strong>
-      Initiator 与 Responder 均在 <code>IKE_SA_INIT</code> 的 Request / Response 中
-      各自发送 <code>NAT_DETECTION_SOURCE_IP</code> 与
-      <code>NAT_DETECTION_DESTINATION_IP</code> 两个 NAT-D 载荷。
-    </li>
-
-    <li><strong>Hash 计算公式：</strong>
-      <code>Hash = HASH_ALG(SPI-I | SPI-R | IP | Port)</code>
-    </li>
-
-    <li><strong>NAT-D 的本质：</strong>
-      NAT-D 并不是“声明自己是否在 NAT 后”，而是向对端提供一份
-      <strong>可被重新计算并验证的 Hash 材料</strong>。
-      是否存在 NAT，始终由<strong>本端自行判断</strong>。
-    </li>
-
-    <li><strong>NAT_DETECTION_SOURCE_IP：</strong>
-      <ul>
-        <li><strong>发送方：</strong>
-          使用<strong>本端认为的</strong>源 IP 与源端口计算 Hash 并发送。
-        </li>
-        <li><strong>接收方：</strong>
-          使用<strong>实际接收到的</strong>源 IP 与源端口重新计算 Hash。
-          若不一致，说明<strong>对端到本端路径上</strong>存在 NAT。
-        </li>
-      </ul>
-    </li>
-
-    <li><strong>NAT_DETECTION_DESTINATION_IP：</strong>
-      <ul>
-        <li><strong>发送方：</strong>
-          使用<strong>本端认为的</strong>目的 IP 与目的端口计算 Hash 并发送。
-        </li>
-        <li><strong>接收方：</strong>
-          使用<strong>本端本地接口地址与端口</strong>重新计算 Hash。
-          若不一致，说明<strong>本端之前</strong>存在 NAT 设备。
-        </li>
-      </ul>
-    </li>
-
-    <li><strong>最终判定原则：</strong>
-      Initiator 与 Responder
-      <strong>各自独立</strong>比对 NAT-D Hash，
-      只要任意一个方向检测到不匹配，
-      即认为路径中存在 NAT，并进入 NAT-T 模式。
-    </li>
+    <li>IKE 双方交换各自计算的 Hash 值</li>
+    <li>若收到的 Hash 与本地重算的不一致 → <strong>NAT 存在</strong></li>
+    <li>NAT-D 的本质是提供一份<strong>可校验的地址指纹</strong></li>
   </ul>
+  
+  <p style="font-size: 18px; color: #64748b; margin-top: 40px;">
+    * 具体的 Hash 覆盖字段将在下一页动画演示
+  </p>
 </section>
 
 
@@ -579,19 +547,74 @@
 <section>
   <h2>检测到 NAT 之后</h2>
   <ul>
-    <li>IKE 通信切换到 UDP 4500</li>
-    <li>ESP 开始进行 UDP 封装</li>
-    <li>连接进入 NAT-T 工作模式</li>
+    <li><strong>端口浮动 (Port Floating)：</strong> <br> IKE 协商端口从 UDP 500 切换至 4500</li>
+    <li><strong>数据封装：</strong> <br> ESP 流量增加 UDP 头部，也走 4500</li>
+    <li>所有的控制流与数据流在同一个端口复用</li>
   </ul>
 </section>
 
 <section>
-  <h2>RFC 3948 定义的 NAT-T 封装</h2>
-  <ul>
-    <li>UDP 头后插入 Non-ESP Marker</li>
-    <li>用于区分 IKE 与 ESP over UDP</li>
-    <li>保证向后兼容</li>
+  <h2>RFC 3948 双流量复用</h2>
+  <p>UDP 4500 端口承载了两种流量，如何区分？</p>
+  
+  <ul style="font-size: 18px; color: #cbd5f5; margin-bottom: 30px;">
+    <li>利用头部前 4 字节进行 "Demultiplexing"</li>
+    <li>IKE 数据包：插入 4 字节全零 (Non-ESP Marker)</li>
+    <li>ESP 数据包：SPI 字段天然不为零 (RFC 规定)</li>
   </ul>
+
+  <svg width="800" height="260" viewBox="0 0 800 260" xmlns="http://www.w3.org/2000/svg">
+    <style>
+      .box-frame { fill: none; stroke-width: 2; rx: 6; }
+      .box-fill { fill-opacity: 0.1; }
+      .txt-label { font-family: monospace; font-size: 14px; text-anchor: middle; fill: #e2e8f0; }
+      .txt-val { font-family: monospace; font-size: 12px; text-anchor: middle; fill: #94a3b8; }
+    </style>
+
+    <!-- Case 1: IKE Packet -->
+    <text x="50" y="30" fill="#38bdf8" font-size="16" font-weight="bold">1. IKE Control Packet (Port 4500)</text>
+    
+    <g transform="translate(50, 50)">
+      <!-- UDP -->
+      <rect x="0" y="0" width="120" height="50" class="box-frame" stroke="#fbbf24" fill="#fbbf24" class="box-fill"/>
+      <text x="60" y="22" class="txt-label">UDP</text>
+      <text x="60" y="40" class="txt-val">Port 4500</text>
+      
+      <!-- Marker -->
+      <rect x="125" y="0" width="160" height="50" class="box-frame" stroke="#f87171" fill="#f87171" class="box-fill" style="stroke-width: 3"/>
+      <text x="205" y="22" class="txt-label">Non-ESP Marker</text>
+      <text x="205" y="40" class="txt-val">0x00 00 00 00</text>
+
+      <!-- IKE -->
+      <rect x="290" y="0" width="200" height="50" class="box-frame" stroke="#a78bfa" fill="#a78bfa" class="box-fill"/>
+      <text x="390" y="30" class="txt-label">IKE Header & Payload</text>
+    </g>
+
+    <!-- Case 2: ESP Packet -->
+    <text x="50" y="160" fill="#38bdf8" font-size="16" font-weight="bold">2. ESP Data Packet (Port 4500)</text>
+    
+    <g transform="translate(50, 180)">
+      <!-- UDP -->
+      <rect x="0" y="0" width="120" height="50" class="box-frame" stroke="#fbbf24" fill="#fbbf24" class="box-fill"/>
+      <text x="60" y="22" class="txt-label">UDP</text>
+      <text x="60" y="40" class="txt-val">Port 4500</text>
+      
+      <!-- ESP SPI -->
+      <rect x="125" y="0" width="160" height="50" class="box-frame" stroke="#a78bfa" fill="#a78bfa" class="box-fill" style="stroke-width: 3"/>
+      <text x="205" y="22" class="txt-label">ESP Header (SPI)</text>
+      <text x="205" y="40" class="txt-val">!= 0 (Unique ID)</text>
+
+      <!-- Data -->
+      <rect x="290" y="0" width="200" height="50" class="box-frame" stroke="#a78bfa" fill="#a78bfa" class="box-fill" stroke-dasharray="4"/>
+      <text x="390" y="30" class="txt-label">Encrypted Payload</text>
+    </g>
+    
+    <!-- Link lines -->
+    <path d="M 285 75 L 285 75" /> 
+    <!-- Just visual alignment cues -->
+    <line x1="175" y1="100" x2="175" y2="180" stroke="#64748b" stroke-width="1" stroke-dasharray="4"/>
+    <text x="185" y="140" fill="#64748b" font-size="12">Kernel Checks 1st 32-bits</text>
+  </svg>
 </section>
 
 <section>
