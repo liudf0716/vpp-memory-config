@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>IPsec VPN 中的 MTU / PMTU / MSS 机制详解</title>
+  <style>
+    /* ===== Geek PPT Theme based on nat-t.html ===== */
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at top, #0b132b, #02040f 70%);
+      color: #e0e6f0;
+      font-family: "JetBrains Mono", "Fira Code", "Segoe UI", monospace;
+      overflow: hidden;
+    }
+
+    .deck {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+
+    section {
+      width: 100vw;
+      height: 100vh;
+      padding: 40px 60px;
+      box-sizing: border-box;
+      position: absolute;
+      top: 0;
+      left: 0;
+      opacity: 0;
+      transform: scale(0.98);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+      
+      /* Center everything */
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    section.active {
+      opacity: 1;
+      transform: scale(1);
+      z-index: 10;
+    }
+
+    h1 {
+      font-size: 72px;
+      margin-bottom: 20px;
+      color: #66fcf1;
+      letter-spacing: 1px;
+    }
+
+    h2 {
+      font-size: 48px;
+      margin-bottom: 30px;
+      color: #7dd3fc;
+    }
+
+    h3 {
+      font-size: 32px;
+      margin-bottom: 15px;
+      color: #38bdf8;
+    }
+
+    p {
+      font-size: 24px;
+      color: #cbd5f5;
+      max-width: 1000px;
+      margin: 10px auto;
+      line-height: 1.6;
+    }
+
+    ul {
+      margin-top: 10px;
+      padding-left: 0;
+      list-style: none;
+      display: inline-block;
+      text-align: left;
+    }
+
+    li {
+      font-size: 26px;
+      margin: 18px 0;
+      padding-left: 32px;
+      position: relative;
+      line-height: 1.5;
+    }
+
+    li::before {
+      content: ">";
+      position: absolute;
+      left: 0;
+      color: #38bdf8;
+      font-weight: bold;
+    }
+
+    code {
+      font-family: inherit;
+      color: #fcd34d;
+    }
+
+    pre {
+      margin: 16px auto;
+      max-width: 1100px;
+      width: 100%;
+      text-align: left;
+      background: rgba(0,0,0,0.35);
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 16px 18px;
+      font-size: 18px;
+      line-height: 1.45;
+      color: #cbd5f5;
+      overflow: auto;
+    }
+
+    .footer {
+      position: absolute;
+      bottom: 24px;
+      right: 40px;
+      font-size: 14px;
+      color: #64748b;
+    }
+
+    .progress {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 4px;
+      background: #66fcf1;
+      width: 0%;
+      transition: width 0.3s;
+    }
+    
+    .hint {
+      position: absolute;
+      bottom: 24px;
+      left: 40px;
+      font-size: 14px;
+      color: #475569;
+    }
+
+    /* Concept Box Style */
+    .concept-box {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 30px;
+      border-radius: 16px;
+      transition: transform 0.3s;
+    }
+    .concept-box:hover {
+      transform: translateY(-5px);
+      border-color: #38bdf8;
+    }
+  </style>
+</head>
+<body>
+
+<div class="deck">
+
+  <!-- Slide 1: Title -->
+  <section class="active">
+    <h1>IPsec MTU / PMTU / MSS 深度解析</h1>
+    <p>为什么 VPN 会卡顿：MTU/PMTU/MSS 的隐形坑</p>
+    <div style="margin-top: 40px; border-top: 1px solid #1e293b; padding-top: 20px;">
+      <p style="font-size: 20px; color: #94a3b8;">
+        关键词: IPsec Overhead · DF/PMTUD 黑洞 · Fragmentation/重传 · MSS Clamping · Policy/Route-based
+      </p>
+    </div>
+  </section>
+
+  <!-- Slide 2: Problem Statement -->
+  <section>
+    <h2>问题画像：VPN 卡顿通常“长这样”</h2>
+    <ul>
+      <li>VPN 能连上、认证也成功，但<strong>网页打不开/加载很慢</strong></li>
+      <li><strong>Ping 通</strong>，但<strong>HTTPS/下载</strong>卡（小包 OK，大包不行）</li>
+      <li>SSH 能连上，但一执行命令/有输出就卡住</li>
+      <li>直连正常，只要走 VPN 就不稳定</li>
+    </ul>
+
+    <div style="margin-top: 22px; max-width: 980px; text-align: left; background: rgba(0,0,0,0.35); border: 1px solid #334155; border-radius: 12px; padding: 18px 20px;">
+      <h3 style="margin: 0 0 8px 0;">一句话结论</h3>
+      <p style="margin: 0; font-size: 22px; color: #cbd5f5;">
+        很多“卡顿”不是带宽问题，而是<strong>大包在隧道里变大</strong>，然后<strong>超 MTU</strong>导致丢包/分片/重传，甚至形成<strong>PMTU 黑洞</strong>。
+      </p>
+    </div>
+  </section>
+
+  <!-- Slide 3: Roadmap -->
+  <section>
+    <h2>讲解路线（跟着 PPT 一路走）</h2>
+    <ul>
+      <li><strong>先对齐名词</strong>：MTU / PMTU / MSS 分别是什么、彼此什么关系</li>
+      <li><strong>再看两端视角</strong>：Host 怎么“决定第一次发多大”？网关怎么在隧道入口把风险前移</li>
+      <li><strong>把机制串起来</strong>：为什么会丢包/分片/重传？为什么会出现 PMTU 黑洞？</li>
+      <li><strong>最后给落地方案</strong>：MSS clamp + 隧道 MTU + 必要 ICMP；以及策略型 vs 路由型怎么放置这些手段</li>
+    </ul>
+  </section>
+
+  <!-- Slide 3: Basic Concepts -->
+  <section>
+    <h2>第 1 步：先把 MTU / PMTU / MSS 说清楚</h2>
+    <div style="display: flex; gap: 34px; justify-content: center; align-items: flex-start; max-width: 1500px; width: 96%;">
+
+      <div class="concept-box" style="flex: 1;">
+        <h3>MTU（接口视角）</h3>
+        <p style="font-size: 18px; color: #9ca3af;">Maximum Transmission Unit</p>
+        <hr style="border-color: rgba(255,255,255,0.1); margin: 20px 0;">
+        <ul style="font-size: 20px;">
+          <li>某个<strong>出接口</strong>允许承载的最大 <strong>IP 包长度</strong></li>
+          <li>以太网常见：<code>1500</code>（不含二层 FCS）</li>
+          <li>超过 MTU：要么分片（IPv4 DF=0），要么丢弃（DF=1 或 IPv6）</li>
+        </ul>
+      </div>
+
+      <div class="concept-box" style="flex: 1;">
+        <h3>PMTU（路径视角）</h3>
+        <p style="font-size: 18px; color: #9ca3af;">Path MTU：端到端路径上的最小 MTU</p>
+        <hr style="border-color: rgba(255,255,255,0.1); margin: 20px 0;">
+        <ul style="font-size: 20px;">
+          <li>PMTU = 路径上所有链路 MTU 的最小值</li>
+          <li>会变化：不同路径/ECMP、隧道叠加、运营商链路调整</li>
+          <li>发现机制：PMTUD（靠 ICMP 回信）或“探测式 PMTU”（不太依赖回信，靠试探退避）</li>
+        </ul>
+      </div>
+
+      <div class="concept-box" style="flex: 1;">
+        <h3>MSS（TCP 视角）</h3>
+        <p style="font-size: 18px; color: #9ca3af;">Maximum Segment Size：TCP payload 上限</p>
+        <hr style="border-color: rgba(255,255,255,0.1); margin: 20px 0;">
+        <ul style="font-size: 20px;">
+          <li>只对 <strong>TCP</strong> 生效（握手时在 SYN/SYN-ACK option 协商）</li>
+          <li>典型：<code>MSS = MTU - IP头(20) - TCP头(20)</code></li>
+          <li style="color: #66fcf1;">以太网 MTU=1500 时，典型 MSS=1460</li>
+        </ul>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Slide 4: Host Perspective -->
+  <section>
+    <h2>第 2 步：Host 视角——主机怎么“决定第一次发多大”？</h2>
+    <ul>
+      <li>主机看到的是：本机接口 MTU、路由表、以及对端在 TCP 握手时通告的 MSS</li>
+      <li>对 TCP：应用写入的数据会被 TCP 按 MSS 分段，尽量让单个 IP 包“不需要分片”</li>
+      <li>对 UDP/ICMP：没有 MSS 兜底，更依赖 PMTU（或应用自身做分片/探测）</li>
+      <li>现代 TCP 常见策略：尽量发送 <strong>DF=1</strong> 的大包，依赖 PMTU 发现机制逐步收敛</li>
+      <li>这意味着：只要路径上有一段“变窄”，但 ICMP 又回不来，就容易形成 <strong>PMTU 黑洞</strong></li>
+      <li style="color:#86efac;"><strong>Host 设置 MTU</strong> 的直接作用：从源头约束“初始发包”的 IP 长度（并间接影响默认 MSS/分段行为）</li>
+    </ul>
+
+    <pre>
+Host 侧常用近似：
+  TCP MSS ≈ 出接口 MTU - IP(20) - TCP(20)
+
+但：当路径中间出现 IPsec/NAT-T 封装时，Host 并不知道“后面会额外变大”。
+    </pre>
+  </section>
+
+  <!-- Slide 5: MTU Meaning: Host vs IPsec Device -->
+  <section>
+    <h2>第 3 步：同样是“设置 MTU”，Host vs 网关到底差在哪？</h2>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 34px; width: 100%; max-width: 1200px;">
+      <div class="concept-box" style="text-align:left;">
+        <h3>Host 主机设置 MTU（端系统）</h3>
+        <ul style="font-size: 20px;">
+          <li>约束的是：主机<strong>出接口</strong>发出的 IP 包最大长度</li>
+          <li>TCP 场景：内核通常会据此选择合适 MSS（或按对端 MSS）来分段</li>
+          <li>UDP 场景：应用如果发超 MTU，常见结果是本机分片（IPv4 DF=0）或直接报错/丢弃（DF=1 / IPv6）</li>
+          <li style="color:#86efac;">结论：更偏“从源头把包发小”，减少后续路径不确定性</li>
+        </ul>
+      </div>
+
+      <div class="concept-box" style="text-align:left;">
+        <h3>IPsec VPN 设备设置 MTU（隧道/转发路径中间）</h3>
+        <ul style="font-size: 20px;">
+          <li>路由型（虚拟/隧道接口）：设置的是<strong>隧道接口 MTU</strong>，约束“进入隧道的内层包”大小</li>
+          <li style="font-size: 18px; color: #cbd5f5; margin-top: 6px; margin-left: 20px; list-style: none;">↳ Linux 常见落地：<strong>XFRM interface</strong>（更现代/推荐）或 <strong>VTI</strong>（更传统，但仍可用）</li>
+          <li>它的核心价值是：把“变窄点”显式化，让设备能在隧道入口<strong>提前触发</strong> ICMP PTB/Frag Needed（为 PMTUD 服务）</li>
+          <li>同时避免：内层包太大导致外层封装后超物理 MTU，引发外层分片/丢包/黑洞</li>
+          <li style="color:#86efac;">结论：更偏“在隧道入口建立正确的 PMTU 约束 + 防止外层超 MTU”</li>
+        </ul>
+      </div>
+    </div>
+
+    <pre>
+一句话总结：
+  Host 调 MTU = 控制“我一开始发多大”。
+  VPN 设备调（隧道）MTU = 控制“进隧道的内层包多大”，让 PMTUD 有机会工作，并避免外层封装后超 MTU。
+    </pre>
+  </section>
+
+  <!-- Slide 6: IPsec Gateway Perspective -->
+  <section>
+    <h2>第 4 步：网关视角——为什么“隧道里”更容易出问题？</h2>
+    <p>关键点：网关会<strong>增加封装开销</strong>，导致“内层看起来不大”的包在外层变成超 MTU 风险。</p>
+
+    <div style="margin-top: 18px; width: 920px;">
+      <svg width="920" height="170" viewBox="0 0 920 170">
+        <!-- Inner Packet -->
+        <rect x="20" y="60" width="360" height="60" fill="#10b981" rx="6" opacity="0.85"/>
+        <text x="200" y="95" fill="white" text-anchor="middle" font-size="16">Inner IP Packet（Host 认为它是“合规”的）</text>
+        <text x="200" y="115" fill="#bbf7d0" text-anchor="middle" font-size="12">例如：1500B（含 inner IP + TCP + payload）</text>
+
+        <!-- Encapsulation -->
+        <text x="420" y="95" fill="#94a3b8" font-size="18">+</text>
+
+        <!-- Outer headers -->
+        <rect x="450" y="60" width="120" height="60" fill="#3b82f6" rx="6" opacity="0.85"/>
+        <text x="510" y="95" fill="white" text-anchor="middle" font-size="15">Outer IP</text>
+        <text x="510" y="115" fill="#bfdbfe" text-anchor="middle" font-size="12">20B</text>
+
+        <rect x="575" y="60" width="110" height="60" fill="#f59e0b" rx="6" opacity="0.85"/>
+        <text x="630" y="95" fill="white" text-anchor="middle" font-size="15">UDP (NAT-T)</text>
+        <text x="630" y="115" fill="#fde68a" text-anchor="middle" font-size="12">8B</text>
+
+        <rect x="690" y="60" width="200" height="60" fill="#8b5cf6" rx="6" opacity="0.85"/>
+        <text x="790" y="95" fill="white" text-anchor="middle" font-size="15">ESP（Hdr/IV/PAD/ICV）</text>
+        <text x="790" y="115" fill="#ddd6fe" text-anchor="middle" font-size="12">依算法/对齐而变（常见 50~100B+）</text>
+      </svg>
+    </div>
+
+    <ul style="background: rgba(0,0,0,0.35); padding: 18px 34px; border-radius: 12px; border: 1px solid #334155;">
+      <li>这类开销发生在<strong>路径中间</strong>：Host 往往不感知（仍按 1500/1460 发）</li>
+      <li>如果公网/物理链路 MTU 仍是 <code>1500</code>，封装后就会出现“外层超 MTU”</li>
+      <li style="color: #fca5a5; font-weight: bold;">网关必须处理：分片 / 丢弃+ICMP / 前移约束（隧道 MTU、MSS clamp）</li>
+      <li style="color:#86efac;">本 PPT 的重点：把问题前移，用 MTU/MSS/PMTUD 机制让业务“不黑洞、不卡顿”</li>
+    </ul>
+  </section>
+
+  <!-- Slide 7: Where It Breaks (TCP + Fragment + DF) -->
+  <section>
+    <h2>第 5 步：机制串联——丢包/分片/重传/黑洞怎么来的？</h2>
+    <div style="display:flex; align-items:center; gap:30px;">
+      <div style="text-align: right;">
+        <p style="color: #38bdf8;">封装后可能变成</p>
+        <div style="font-size: 40px; font-weight: bold; color: #f87171;">1570~1600 B</div>
+      </div>
+      <div style="font-size: 40px; color: #64748b;">VS</div>
+      <div style="text-align: left;">
+        <p style="color: #38bdf8;">物理/公网接口 MTU</p>
+        <div style="font-size: 40px; font-weight: bold; color: #fcd34d;">1500 B</div>
+      </div>
+    </div>
+
+    <div style="margin-top: 18px; background: rgba(239, 68, 68, 0.10); padding: 20px; border-left: 5px solid #ef4444; text-align: left; max-width: 980px;">
+      <h3 style="color: #fca5a5; margin: 0 0 10px 0; font-size: 24px;">关键技术点</h3>
+      <ul style="margin: 0;">
+        <li><strong>IPv4 分片</strong>：由路由器或发送端分片，接收端重组；任一分片丢失→整包失败→上层重传</li>
+        <li><strong>DF 位</strong>（Don't Fragment）：DF=1 时，超过 MTU 的 IPv4 包必须丢弃并返回 ICMP “Frag Needed”</li>
+        <li><strong>IPv6</strong>：中间设备不会分片，只能靠源端调整；更依赖“PTB 回信/探测式退避”</li>
+        <li><strong>TCP 的放大效应</strong>：丢的是“一个 IP 包”，伤的是“一个 TCP 段”→触发重传/拥塞控制→表现为卡顿</li>
+        <li><strong>NAT 对分片不友好</strong>：很多设备只在首片能看到 L4 端口，后续分片易被丢</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Slide 8: What can IPsec device do at encapsulation time -->
+  <section>
+    <h2>第 6 步：网关当场能怎么处理？（为什么说手段有限）</h2>
+    <p>当“外层包长度 &gt; 出接口 MTU”时，设备必须二选一：<strong>让它变小</strong> 或 <strong>让它消失</strong>。</p>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 34px; width: 100%; max-width: 1200px;">
+      <div class="concept-box" style="text-align:left;">
+        <h3>常见处理动作（从理想到现实）</h3>
+        <ul style="font-size: 20px;">
+          <li><strong>回 ICMP PTB/Frag Needed</strong>：通知源端把 PMTU 降下来（为 PMTUD 服务）</li>
+          <li><strong>外层分片（加密后分片）</strong>：把外层 IPv4 包切成多个分片再发送</li>
+          <li><strong>内层分片（加密前分片）</strong>：先切小内层包，再分别封装（避免外层出现分片）</li>
+          <li><strong>DF 策略处理</strong>：复制/清除/强制 DF，决定“分片 vs 丢弃”的倾向</li>
+          <li><strong>直接丢弃</strong>：最简单，但最容易表现为“卡顿/黑洞”</li>
+        </ul>
+      </div>
+
+      <div class="concept-box" style="text-align:left;">
+        <h3>为什么说“手段有限”？</h3>
+        <ul style="font-size: 20px;">
+          <li><strong>通知链条很长</strong>：ICMP 需要一路“回到源端”，但现实里经常被过滤</li>
+          <li><strong>分片代价高</strong>：丢任一分片＝整包失败；重组耗 CPU；引入抖动与重传放大</li>
+          <li><strong>NAT-T 更麻烦</strong>：非首片看不到 UDP 端口/状态，很多 NAT/防火墙对分片支持很差</li>
+          <li><strong>IPv6 更“硬”</strong>：中间设备不能分片，只能依赖源端调整（更依赖 PTB/探测式退避）</li>
+          <li><strong>它是中间节点</strong>：无法替应用“聪明地改包”，最多做机械的分片/丢弃/通知</li>
+        </ul>
+      </div>
+    </div>
+
+    <pre>
+工程结论：
+  很多人会自然想到一个“看似省事”的方案：
+  - 回 ICMP，让 PMTUD 自动把源端调小
+  但现实里这条通知链路经常断（下一页展开），所以不能“只靠 PMTUD”。
+
+  与其期待“封装时临场处理”，不如把问题前移：
+  - 路由型：用隧道接口 MTU 提前约束内层包
+  - 再配合 TCP MSS clamping，让大多数业务根本不会制造超 MTU 的外层包
+    </pre>
+  </section>
+
+  <!-- Slide 9: PMTUD in Reality -->
+  <section>
+    <h2>第 7 步：为什么不能“只靠 PMTUD”？</h2>
+    <p>上页提到“回 ICMP 让源端变小”这招很合理，但在现实网络里，PMTUD 的通知链路（ICMP）经常不可靠。</p>
+
+    <div style="display: flex; flex-direction: column; gap: 18px; max-width: 980px;">
+      <div style="background: #0f172a; padding: 15px; border-radius: 10px; border: 1px solid #334155; width: 100%; text-align:left;">
+        <strong style="color: #38bdf8;">Step 1：</strong>中间设备发现超 MTU 且 DF=1，丢弃并发送 ICMP（IPv4: Type 3 Code 4）。
+      </div>
+      <div style="background: #0f172a; padding: 15px; border-radius: 10px; border: 1px solid #334155; width: 100%; text-align:left;">
+        <strong style="color: #f87171;">Step 2：</strong>路径上的 ACL/防火墙/运营商策略把 ICMP 当作“风险流量”过滤。
+      </div>
+      <div style="background: #0f172a; padding: 15px; border-radius: 10px; border: 1px solid #334155; width: 100%; text-align:left;">
+        <strong style="color: #fcd34d;">Result：</strong>发送端收不到 PMTU 变小的信号，持续发大包 → 持续被丢 → <strong>PMTU 黑洞</strong>。
+      </div>
+    </div>
+
+    <pre>
+典型症状：
+  - Ping 通（小包）但 HTTPS/网页打不开（大包 + DF=1）
+  - SSH 能连上但一执行命令就卡（交互小包 OK，稍大响应卡）
+  - 只在走 VPN 的业务上出现，直连没问题
+    </pre>
+  </section>
+
+  <!-- Slide 10: Solution Options -->
+  <section>
+    <h2>第 8 步：解决思路总览（从根到枝）</h2>
+    <ul>
+      <li><strong>优先</strong>：让“外层包”不超过物理 MTU（从源头避免分片/黑洞）</li>
+      <li>手段 A：在 VPN 设备上做 <strong>TCP MSS Clamping</strong>（让 TCP 主动变小）</li>
+      <li>手段 B：合理设置 <strong>隧道/虚接口 MTU</strong>（路由型 IPsec 最顺手）</li>
+      <li>手段 C：允许必要的 ICMP（Frag Needed / PTB）让 PMTUD 能工作</li>
+      <li>手段 D：提升底层 MTU（如公网/专线/jumbo），或减少封装（避免 NAT-T）</li>
+    </ul>
+
+    <pre>
+常用估算（以 NAT-T + ESP 隧道为例）：
+  推荐 MSS ≈ 物理 MTU(1500) - IPsec/NAT-T 额外开销(常见 60~100+) - 40(TCP+IP)
+  经验值：1360 / 1380 / 1300（保守）
+    </pre>
+  </section>
+
+  <!-- Slide 9: Policy-based vs Route-based -->
+  <section>
+    <h2>两种 IPsec VPN：策略型 vs 路由型</h2>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 34px; width: 100%; max-width: 1200px;">
+      <div class="concept-box" style="text-align:left;">
+        <h3>策略型（Policy-based / SPD）</h3>
+        <ul style="font-size: 20px;">
+          <li>“匹配五元组/网段 → 走 IPsec”</li>
+          <li>转发不一定经过一个“可见的隧道接口”</li>
+          <li>MSS 钳制/MTU 处理往往要放在<strong>明文侧接口</strong>或策略点</li>
+          <li>多子网、多策略时，运维复杂，排障不直观</li>
+          <li style="color:#fca5a5;">容易出现：部分流量走隧道、部分直出，MTU 行为不一致</li>
+        </ul>
+      </div>
+
+      <div class="concept-box" style="text-align:left;">
+        <h3>路由型（Route-based / Tunnel IF）</h3>
+        <ul style="font-size: 20px;">
+          <li>把 IPsec 抽象成<strong>三层接口</strong>：像普通路由口一样转发</li>
+          <li>可以在“隧道接口”上自然设置 <strong>MTU</strong>、做 <strong>MSS clamp</strong></li>
+          <li>可跑动态路由（OSPF/BGP/策略路由/ECMP）</li>
+          <li>统计/限速/QoS/监控都更直观</li>
+          <li style="color:#86efac;">工程上更可控：MTU/MSS 处理点清晰且一致</li>
+          <li style="font-size: 18px; color: #cbd5f5; margin-top: 6px; margin-left: 20px; list-style: none;">↳ Linux 常用实现：<strong>XFRM interface</strong>（更现代/推荐），也可能使用 <strong>VTI</strong>（传统方案）</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Slide 10: Why Route-based Wins -->
+  <section>
+    <h2>为什么现代 IPsec 更偏“基于路由”？</h2>
+    <ul>
+      <li><strong>规模</strong>：多站点/多子网/多租户时，路由比策略匹配更可扩展</li>
+      <li><strong>一致性</strong>：同一条“隧道路径”上统一 MTU/MSS/ICMP 策略，减少偶发问题</li>
+      <li><strong>可观测性</strong>：隧道接口有明确计数器、抓包点、故障域</li>
+      <li><strong>与 SD-WAN/云网络契合</strong>：路由收敛、选路、健康探测是基础能力</li>
+      <li><strong>工程落地</strong>：把 IPsec 当成“传输承载”，业务只关心路由</li>
+    </ul>
+  </section>
+
+  <!-- Slide 11: Device-side MSS Clamping -->
+  <section>
+    <h2>设备侧落地 1：TCP MSS Clamping（钳制）</h2>
+    <p>核心思想：在握手时把 MSS 降下来，让后续 TCP 段天然不会触发外层超 MTU。</p>
+
+    <svg width="860" height="290">
+      <defs>
+        <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+          <path d="M0,0 L0,6 L9,3 z" fill="#94a3b8" />
+        </marker>
+      </defs>
+
+      <text x="40" y="28" fill="white" font-weight="bold">Client (Host)</text>
+      <line x1="70" y1="45" x2="70" y2="255" stroke="#475569" stroke-width="2"/>
+
+      <rect x="320" y="18" width="220" height="250" fill="#1e293b" rx="12" stroke="#38bdf8" />
+      <text x="430" y="46" fill="#38bdf8" text-anchor="middle" font-weight="bold">IPsec VPN 设备</text>
+      <text x="430" y="146" fill="#fcd34d" text-anchor="middle" font-size="14">Clamp MSS on SYN/SYN-ACK</text>
+
+      <text x="760" y="28" fill="white" font-weight="bold">Server</text>
+      <line x1="800" y1="45" x2="800" y2="255" stroke="#475569" stroke-width="2"/>
+
+      <path d="M 70 80 L 320 80" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+      <text x="195" y="68" fill="#cbd5f5" font-size="12" text-anchor="middle">SYN, MSS=1460</text>
+
+      <text x="430" y="165" fill="#a5b4fc" font-size="12" text-anchor="middle">1460 → 1360</text>
+
+      <path d="M 540 80 L 800 80" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+      <text x="670" y="68" fill="#cbd5f5" font-size="12" text-anchor="middle">SYN, MSS=1360</text>
+    </svg>
+
+    <ul>
+      <li>优点：对应用透明；对 PMTUD 依赖更小；最常用、最稳妥</li>
+      <li>局限：只覆盖 TCP；UDP 仍要靠 PMTU/应用层/分片策略</li>
+      <li>部署点：策略型一般在明文侧接口/策略点；路由型可直接在隧道接口上做</li>
+    </ul>
+  </section>
+
+  <!-- Slide 12: Device-side MTU handling -->
+  <section>
+    <h2>设备侧落地 2：MTU/分片处理（按 VPN 类型）</h2>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 34px; width: 100%; max-width: 1200px;">
+      <div class="concept-box" style="text-align:left;">
+        <h3>策略型 IPsec 的常见做法</h3>
+        <ul style="font-size: 20px;">
+          <li>在明文入口处 clamp MSS（覆盖所有匹配策略的 TCP 流）</li>
+          <li>尽量允许必要 ICMP（尤其跨公网/复杂链路）</li>
+          <li>必要时启用“在加密前分片/在明文侧分片”的能力（取决于实现）</li>
+          <li>风险点：策略多时容易漏规则，导致部分流量仍然大包黑洞</li>
+        </ul>
+      </div>
+
+      <div class="concept-box" style="text-align:left;">
+        <h3>路由型 IPsec 的常见做法</h3>
+        <ul style="font-size: 20px;">
+          <li>把 IPsec 绑定到隧道/虚拟接口（Linux 常见为 <strong>XFRM interface</strong>），直接设置 tunnel MTU</li>
+          <li>在 tunnel 接口做 MSS clamp（思路最清晰）</li>
+          <li>配合路由/策略路由，实现一致的转发路径与一致的 MTU 行为</li>
+          <li>收益：排障可直接围绕“接口 MTU + 抓包点 + 计数器”展开</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Slide 13: Best Practice -->
+  <section>
+    <h2>最佳实践建议</h2>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; width: 100%; max-width: 1000px;">
+      
+      <div>
+        <h3>1. 推荐数值</h3>
+        <ul style="font-size: 20px;">
+          <li>通用设置 MSS: <strong>1360 Bytes</strong>（NAT-T + ESP 常见经验值）</li>
+          <li>保守设置 MSS: <strong>1300 Bytes</strong>（链路更复杂/更不可信时）</li>
+          <li>估算：MSS ≈ 物理 MTU - IPsec/NAT-T 额外开销 - 40（IP+TCP）</li>
+          <li>提醒：不同算法/对齐/是否 NAT-T，开销会变化，不要“死记一个数”</li>
+        </ul>
+      </div>
+
+      <div>
+        <h3>2. VPP 配置建议</h3>
+        <ul style="font-size: 20px;">
+          <li>优先把 IPsec 做成“路由型/接口型”来管理 MTU/MSS</li>
+          <li>在相关接口上启用钳制：<code>set interface tcp-mss-clamp</code></li>
+          <li>同时关注接口 MTU / 隧道 MTU 的整体一致性</li>
+        </ul>
+      </div>
+
+    </div>
+    
+    <p style="margin-top: 34px; color: #86efac;">
+      记住：MTU 问题往往表现为 “Ping 通但网页打不开” 或 “SSH 能连上但敲命令卡死”。
+    </p>
+  </section>
+
+  <!-- Slide 14: Contact -->
+  <section>
+    <h2 style="background: linear-gradient(90deg, #66fcf1, #38bdf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">加入技术交流群</h2>
+    <p style="color: #cbd5f5; margin-bottom: 30px;">欢迎扫码加入我们的 QQ 技术交流群，共同探讨 IPsec / VPP / 网络安全等前沿技术。</p>
+    
+    <div style="position: relative; padding: 15px;">
+      <img src="qq-group.jpg" alt="QQ Group QR Code" style="width: 420px; height: 620px; border-radius: 20px; border: 4px solid #38bdf8; box-shadow: 0 0 40px rgba(56, 189, 248, 0.4);">
+      <!-- Decorative corner markers -->
+      <div style="position: absolute; top: 0; left: 0; width: 60px; height: 60px; border-top: 5px solid #66fcf1; border-left: 5px solid #66fcf1; border-radius: 20px 0 0 0;"></div>
+      <div style="position: absolute; bottom: 0; right: 0; width: 60px; height: 60px; border-bottom: 5px solid #66fcf1; border-right: 5px solid #66fcf1; border-radius: 0 0 20px 0;"></div>
+    </div>
+    
+    <p style="margin-top: 30px; font-size: 26px; color: #7dd3fc; font-weight: bold; letter-spacing: 2px;">
+      期待与你交流！
+    </p>
+  </section>
+
+  <div class="hint">← / → 或 空格 翻页</div>
+  <div class="footer">IPsec MTU/PMTU/MSS Optimization · 2026</div>
+  <div class="progress" id="progress"></div>
+
+</div>
+
+<script>
+  const slides = document.querySelectorAll('section');
+  const progress = document.getElementById('progress');
+  let index = 0;
+
+  function show(i) {
+    slides.forEach((s, idx) => {
+      s.classList.toggle('active', idx === i);
+    });
+    progress.style.width = ((i + 1) / slides.length * 100) + '%';
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') {
+      index = Math.min(index + 1, slides.length - 1);
+      show(index);
+    }
+    if (e.key === 'ArrowLeft') {
+      index = Math.max(index - 1, 0);
+      show(index);
+    }
+  });
+</script>
+
+</body>
+</html>
