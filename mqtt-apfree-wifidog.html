@@ -1053,13 +1053,15 @@
           <p><strong>Topic 结构推荐：</strong></p>
           <code
             style="display:block; background:#000; padding:15px; border-radius:8px; font-family:monospace; margin:10px 0; color:#4facfe;">
-          awifi/gw/{mac_address}/downlink<br>
-          awifi/gw/{mac_address}/uplink
+          wifidogx/v1/{device_id}/s2c/request<br>
+          wifidogx/v1/{device_id}/s2c/response<br>
+          wifidogx/v1/{device_id}/c2s/request<br>
+          wifidogx/v1/{device_id}/c2s/response
         </code>
           <ul class="list" style="margin-top:20px">
-            <li><strong>Downlink:</strong> 云端 -> 路由。如下发踢人指令、修改带宽配置。</li>
-            <li><strong>Uplink:</strong> 路由 -> 云端。如认证成功事件、心跳包。</li>
-            <li><strong>apfree-wifidog 实现:</strong> 集成 libmosquitto 库，独立的 sub 线程监听 downlink，回调函数直接操作 iptables。</li>
+            <li><strong>s2c (Server to Client):</strong> 服务器 -> 客户端。服务器发起的控制命令，如重启、配置更新。</li>
+            <li><strong>c2s (Client to Server):</strong> 客户端 -> 服务器。设备上报的状态和事件，如心跳、告警。</li>
+            <li><strong>设计优势：</strong> 将命令类别（如重启、配置更新）放到MQTT JSON payload的"op"字段中，减少Broker的topic维护负担，实现更灵活的命令扩展。</li>
           </ul>
         </div>
       </div>
