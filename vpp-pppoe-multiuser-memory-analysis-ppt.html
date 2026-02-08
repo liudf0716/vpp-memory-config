@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VPP PPPoE 内存问题分析</title>
+    <style>
+        :root {
+            --bg-deep: #0f172a;
+            --bg-gradient: radial-gradient(circle at top, #0b132b, #02040f 70%);
+            --cyan: #66fcf1;
+            --blue: #38bdf8;
+            --text-main: #e0e6f0;
+            --text-dim: #94a3b8;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "JetBrains Mono", "Fira Code", "Segoe UI", monospace;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            overflow: hidden;
+            line-height: 1.6;
+        }
+
+        .slide {
+            width: 100vw;
+            height: 100vh;
+            display: none;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            padding: 4rem 6rem;
+            box-sizing: border-box;
+            background: var(--bg-gradient);
+            opacity: 0;
+            transform: translateX(50px) scale(0.95);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .slide.active {
+            display: flex;
+            opacity: 1;
+            transform: translateX(0) scale(1);
+        }
+
+        .slide-content {
+            max-width: 70%;
+            text-align: center;
+        }
+
+        .slide h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(90deg, var(--cyan), var(--blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            border-left: 6px solid var(--blue);
+            padding-left: 2rem;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .slide h2 {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-dim);
+            border-left: 4px solid var(--cyan);
+            padding-left: 1.5rem;
+            text-align: left;
+        }
+
+        .slide ul {
+            list-style-type: none;
+            padding-left: 0;
+            font-size: 1.6rem;
+            text-align: left;
+        }
+
+        .slide li {
+            margin-bottom: 0.8rem;
+            padding-left: 2rem;
+            position: relative;
+            line-height: 1.6;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.5s ease forwards;
+        }
+
+        .slide li:nth-child(1) { animation-delay: 0.1s; }
+        .slide li:nth-child(2) { animation-delay: 0.2s; }
+        .slide li:nth-child(3) { animation-delay: 0.3s; }
+        .slide li:nth-child(4) { animation-delay: 0.4s; }
+        .slide li:nth-child(5) { animation-delay: 0.5s; }
+        .slide li:nth-child(6) { animation-delay: 0.6s; }
+
+        .slide li::before {
+            content: ">";
+            position: absolute;
+            left: 0;
+            color: var(--cyan);
+            font-weight: bold;
+        }
+
+        .slide p {
+            font-size: 1.6rem;
+            text-align: left;
+            max-width: 800px;
+            color: var(--text-dim);
+        }
+
+        .footer {
+            position: absolute;
+            bottom: 2rem;
+            right: 3rem;
+            font-size: 1rem;
+            color: var(--text-dim);
+        }
+
+        #progress {
+            position: fixed;
+            top: 2rem;
+            right: 3rem;
+            font-size: 1.2rem;
+            color: var(--text-dim);
+            background: rgba(0,0,0,0.3);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 2rem;
+            left: 3rem;
+            font-size: 1rem;
+            color: var(--text-dim);
+            opacity: 0.7;
+        }
+
+        #nav {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .nav-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #555;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+
+        .nav-dot:hover {
+            transform: scale(1.2);
+        }
+
+        .nav-dot.active {
+            background-color: var(--blue);
+        }
+
+        .slide pre {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--cyan);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-size: 1.2rem;
+            color: var(--text-main);
+            overflow-x: auto;
+            text-align: left;
+        }
+
+        .slide code {
+            font-family: "JetBrains Mono", "Fira Code", monospace;
+        }
+    </style>
+</head>
+<body>
+    <section class="slide active" id="slide0">
+        <div class="slide-content">
+            <h1>基于 VPP 的 PPPoE 多用户拨号项目中的内存问题分析</h1>
+            <h2>VRF 隔离场景下的路由表设计取舍</h2>
+        </div>
+        <div class="footer">工程项目实战分享</div>
+    </section>
+
+    <section class="slide" id="slide1">
+        <div class="slide-content">
+            <h2>项目背景</h2>
+            <ul>
+                <li>使用 VPP 实现 PPPoE 多用户拨号</li>
+                <li>面向万级用户规模</li>
+                <li>需要用户三层完全隔离</li>
+                <li>技术方案：每个拨号用户独立 VRF</li>
+            </ul>
+        </div>
+        <div class="footer">工程项目实战分享</div>
+    </section>
+
+    <section class="slide" id="slide2">
+        <div class="slide-content">
+            <h2>问题现象</h2>
+            <ul>
+                <li>小规模用户运行正常，无内存异常</li>
+                <li>随着用户数量增加，内存快速增长，多次触发 VPP 崩溃</li>
+                <li>增加 VPP 内存配置后问题有所缓解，但不彻底</li>
+                <li>2 万用户测试中内存占用达到不可接受水平</li>
+            </ul>
+        </div>
+        <div class="footer">工程项目实战分享</div>
+    </section>
+
+    <section class="slide" id="slide3">
+        <div class="slide-content">
+            <h2>排查思路</h2>
+            <ul>
+                <li>排除数据面 buffer 泄漏</li>
+                <li>排除 PPPoE session 状态异常</li>
+                <li>发现内存增长与 VRF 数量强相关</li>
+                <li>判断问题在 VRF 相关结构</li>
+            </ul>
+        </div>
+        <div class="footer">工程项目实战分享</div>
+    </section>
+
+    <section class="slide" id="slide4">
+        <div class="slide-content">
+            <h2>VRF 与 FIB 关系</h2>
+            <ul>
+                <li>VPP 中每个 VRF 对应一套路由表（FIB）</li>
+                <li>FIB 内部维护完整路由查询结构</li>
+                <li>PPPoE 场景中：用户数 ≈ VRF 数量</li>
+                <li>需要维护大量 FIB 实例</li>
+            </ul>
+        </div>
+        <div class="footer">工程项目实战分享</div>
+    </section>
+
+    <section class="slide" id="slide5">
+        <div class="slide-content">
+            <h2>VPP 默认路由算法</h2>
+            <ul>
+                <li>IPv4 FIB 默认采用 16-8-8 查询结构</li>
+                <li>IPv4 地址拆分为：</li>
+                <li>前 16 bit</li>
+                <li>中间 8 bit</li>
+                <li>最后 8 bit</li>
+                <li>设计目标：极致查询性能</li>
+            </ul>
+        </div>
+        <div class="footer">工程项目实战分享</div>
+    </section>
+
+    <section class="slide" id="slide6">
+        <div class="slide-content">
+            <h2>16-8-8 内存模型</h2>
+            <svg width="600" height="200" viewBox="0 0 600 200" style="margin: 2rem auto; display: block;">
+                <defs>
+                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#66fcf1" />
+                    </marker>
+                </defs>
+                <!-- Root -->
+                <circle cx="50" cy="100" r="30" fill="#38bdf8" />
+                <text x="50" y="105" text-anchor="middle" fill="white" font-size="14">16-bit</text>
+                <text x="50" y="125" text-anchor="middle" fill="#e0e6f0" font-size="12">2^16 entries</text>
+                <!-- Arrow -->
+                <line x1="80" y1="100" x2="120" y2="100" stroke="#66fcf1" stroke-width="2" marker-end="url(#arrowhead)" />
+                <!-- Second level -->
+                <circle cx="150" cy="100" r="30" fill="#38bdf8" />
+                <text x="150" y="105" text-anchor="middle" fill="white" font-size="14">8-bit</text>
+                <text x="150" y="125" text-anchor="middle" fill="#e0e6f0" font-size="12">256 entries</text>
+                <!-- Arrow -->
+                <line x1="180" y1="100" x2="220" y2="100" stroke="#66fcf1" stroke-width="2" marker-end="url(#arrowhead)" />
+                <!-- Third level -->
+                <circle cx="250" cy="100" r="30" fill="#38bdf8" />
+                <text x="250" y="105" text-anchor="middle" fill="white" font-size="14">8-bit</text>
+                <text x="250" y="125" text-anchor="middle" fill="#e0e6f0" font-size="12">256 entries</text>
+                <!-- Arrow -->
+                <line x1="280" y1="100" x2="320" y2="100" stroke="#66fcf1" stroke-width="2" marker-end="url(#arrowhead)" />
+                <!-- Leaf -->
+                <rect x="330" y="85" width="60" height="30" fill="#0f172a" stroke="#66fcf1" />
+                <text x="360" y="105" text-anchor="middle" fill="#e0e6f0" font-size="14">Route</text>
+            </svg>
+            <pre><code>typedef struct ip4_mtrie_16_ply_t_
+{
+  ip4_mtrie_leaf_t leaves[65536];        // 65536 * 4 = 262144 bytes
+  u8 dst_address_bits_of_leaves[65536];  // 65536 * 1 = 65536 bytes
+} ip4_mtrie_16_ply_t;                    // Total: ~320KB</code></pre>
+            <ul>
+                <li>一级表大小：2^16 个 entry</li>
+                <li>每个 entry 占用 5 字节</li>
+                <li>单 VRF 固定占用约 320 KB</li>
+                <li>即使只有一条默认路由也无法减少</li>
+            </ul>
+        </div>
+        <div class="footer">工程项目实战分享</div>
+    </section>
+
+    <section class="slide" id="slide7">
+        <div class="slide-content">
+            <h2>规模放大后的结果</h2>
+            <ul>
+                <li>VRF 数量：10000</li>
+                <li>内存占用：320 KB × 10000 ≈ 3.2 GB</li>
+                <li>内存消耗与实际路由数量无关</li>
+                <li>成为主要内存瓶颈</li>
+            </ul>
+        </div>
+        <div class="footer">工程项目实战分享</div>
+    </section>
+
+    <section class="slide" id="slide8">
+        <div class="slide-content">
+            <h2>16-8-8 的设计初衷</h2>
+            <ul>
+                <li>查询层级少</li>
+                <li>内存访问路径稳定</li>
+                <li>cache 命中率高</li>
+                <li>适用于少 VRF、大路由场景</li>
+            </ul>
+        </div>
+        <div class="footer">工程项目实战分享</div>
+    </section>
+
+    <section class="slide" id="slide9">
+        <div class="slide-content">
+            <h2>问题本质总结</h2>
+            <ul>
+                <li>不是内存泄漏</li>
+                <li>是算法设计与使用场景不匹配</li>
+                <li>海量 VRF + 小路由表</li>
+                <li>固定开销被放大</li>
+            </ul>
+        </div>
+        <div class="footer">工程项目实战分享</div>
+    </section>
+
+    <section class="slide" id="slide10">
+        <div class="slide-content">
+            <h2>优化方向</h2>
+            <ul>
+                <li>目标：降低每个 VRF 的固定内存成本</li>
+                <li>场景特点：VRF 多、路由少</li>
+                <li>引出方案：8-8-8-8 路由查询结构</li>
+            </ul>
+        </div>
+        <div class="footer">工程项目实战分享</div>
+    </section>
+
+    <section class="slide" id="slide11">
+        <div class="slide-content">
+            <h2>8-8-8-8 路由结构</h2>
+            <svg width="700" height="200" viewBox="0 0 700 200" style="margin: 2rem auto; display: block;">
+                <defs>
+                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#66fcf1" />
+                    </marker>
+                </defs>
+                <!-- First level -->
+                <circle cx="50" cy="100" r="30" fill="#38bdf8" />
+                <text x="50" y="105" text-anchor="middle" fill="white" font-size="14">8-bit</text>
+                <text x="50" y="125" text-anchor="middle" fill="#e0e6f0" font-size="12">256 entries</text>
+                <!-- Arrow -->
+                <line x1="80" y1="100" x2="120" y2="100" stroke="#66fcf1" stroke-width="2" marker-end="url(#arrowhead)" />
+                <!-- Second level -->
+                <circle cx="150" cy="100" r="30" fill="#38bdf8" />
+                <text x="150" y="105" text-anchor="middle" fill="white" font-size="14">8-bit</text>
+                <text x="150" y="125" text-anchor="middle" fill="#e0e6f0" font-size="12">256 entries</text>
+                <!-- Arrow -->
+                <line x1="180" y1="100" x2="220" y2="100" stroke="#66fcf1" stroke-width="2" marker-end="url(#arrowhead)" />
+                <!-- Third level -->
+                <circle cx="250" cy="100" r="30" fill="#38bdf8" />
+                <text x="250" y="105" text-anchor="middle" fill="white" font-size="14">8-bit</text>
+                <text x="250" y="125" text-anchor="middle" fill="#e0e6f0" font-size="12">256 entries</text>
+                <!-- Arrow -->
+                <line x1="280" y1="100" x2="320" y2="100" stroke="#66fcf1" stroke-width="2" marker-end="url(#arrowhead)" />
+                <!-- Fourth level -->
+                <circle cx="350" cy="100" r="30" fill="#38bdf8" />
+                <text x="350" y="105" text-anchor="middle" fill="white" font-size="14">8-bit</text>
+                <text x="350" y="125" text-anchor="middle" fill="#e0e6f0" font-size="12">256 entries</text>
+                <!-- Arrow -->
+                <line x1="380" y1="100" x2="420" y2="100" stroke="#66fcf1" stroke-width="2" marker-end="url(#arrowhead)" />
+                <!-- Leaf -->
+                <rect x="430" y="85" width="60" height="30" fill="#0f172a" stroke="#66fcf1" />
+                <text x="460" y="105" text-anchor="middle" fill="#e0e6f0" font-size="14">Route</text>
+            </svg>
+            <ul>
+                <li>IPv4 拆分为 4 个 8 bit</li>
+                <li>每层最多 256 个 entry</li>
+                <li>路由表按需分配</li>
+                <li>无大块预分配表</li>
+            </ul>
+        </div>
+        <div class="footer">工程项目实战分享</div>
+    </section>
+
+    <section class="slide" id="slide12">
+        <div class="slide-content">
+            <h2>两种算法对比</h2>
+            <ul>
+                <li>内存占用：</li>
+                <li>16-8-8：固定320KB一级表开销</li>
+                <li>8-8-8-8：按需分配，随路由增长</li>
+                <li>查询性能：</li>
+                <li>16-8-8：更快</li>
+                <li>8-8-8-8：略慢</li>
+                <li>适用场景明显不同</li>
+            </ul>
+        </div>
+        <div class="footer">工程项目实战分享</div>
+    </section>
+
+    <section class="slide" id="slide13">
+        <div class="slide-content">
+            <h2>方案选择</h2>
+            <ul>
+                <li>PPPoE 多用户特点：</li>
+                <li>VRF 极多</li>
+                <li>路由极少</li>
+                <li>性能不是瓶颈</li>
+                <li>内存是核心限制</li>
+                <li>选择更省内存方案</li>
+            </ul>
+        </div>
+        <div class="footer">工程项目实战分享</div>
+    </section>
+
+    <section class="slide" id="slide14">
+        <div class="slide-content">
+            <h2>VPP 8-8-8-8 启用方法</h2>
+            <ul>
+                <li>VPP 默认使用 16-8-8 算法</li>
+                <li>要启用 8-8-8-8，修改 CMake 选项</li>
+                <li>在 src/vnet/CMakeLists.txt 中设置：</li>
+                <li>option(VPP_IP_FIB_MTRIE_16 OFF)</li>
+                <li>或构建时添加 -DVPP_IP_FIB_MTRIE_16=OFF</li>
+                <li>重新编译 VPP 并部署</li>
+            </ul>
+        </div>
+        <div class="footer">工程项目实战分享</div>
+    </section>
+
+    <section class="slide" id="slide15">
+        <div class="glass-card fade-in">
+            <h2>联系我们 / 加入探讨</h2>
+            <div style="margin: 20px 0;">
+                <img src="qq-group.jpg" alt="QQ Group"
+                    style="max-width: 400px; border-radius: 16px; border: 2px solid var(--accent-color); box-shadow: 0 10px 30px rgba(0,122,255,0.4);">
+            </div>
+            <p>扫描上方二维码加入 VPP 技术交流群</p>
+            <p style="font-size: 0.9rem; color: var(--accent-color); margin-top: 20px;">探索更多边缘计算与高性能转发方案</p>
+        </div>
+        <div class="footer">工程项目实战分享</div>
+    </section>
+
+    <div id="progress">1/15</div>
+    <div class="controls">使用 ← → 或空格键翻页</div>
+    <div id="nav"></div>
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        const nav = document.getElementById('nav');
+
+        // Generate navigation dots
+        for (let i = 0; i < totalSlides; i++) {
+            const dot = document.createElement('div');
+            dot.classList.add('nav-dot');
+            dot.addEventListener('click', () => showSlide(i));
+            nav.appendChild(dot);
+        }
+        const dots = document.querySelectorAll('.nav-dot');
+
+        function showSlide(index) {
+            slides.forEach((slide, i) => {
+                slide.classList.toggle('active', i === index);
+            });
+            dots.forEach((dot, i) => {
+                dot.classList.toggle('active', i === index);
+            });
+            document.getElementById('progress').textContent = `${index + 1}/${totalSlides}`;
+            currentSlide = index;
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                e.preventDefault();
+                if (currentSlide < totalSlides - 1) {
+                    showSlide(currentSlide + 1);
+                }
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                if (currentSlide > 0) {
+                    showSlide(currentSlide - 1);
+                }
+            }
+        });
+
+        window.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            if (e.deltaY > 0 && currentSlide < totalSlides - 1) {
+                showSlide(currentSlide + 1);
+            } else if (e.deltaY < 0 && currentSlide > 0) {
+                showSlide(currentSlide - 1);
+            }
+        });
+
+        // Initialize
+        showSlide(0);
+    </script>
+</body>
+</html>
