@@ -5,13 +5,57 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VPP PPPoE 内存问题分析</title>
     <style>
+        /* 引入 Google Fonts */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
         :root {
-            --bg-deep: #0f172a;
-            --bg-gradient: radial-gradient(circle at top, #0b132b, #02040f 70%);
-            --cyan: #66fcf1;
-            --blue: #38bdf8;
-            --text-main: #e0e6f0;
+            /* 背景层次 */
+            --bg-deep: #0a0e1a;
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-elevated: #334155;
+            
+            /* 渐变背景 */
+            --bg-gradient: radial-gradient(ellipse at top, #1e3a8a 0%, #0f172a 40%, #020617 100%);
+            --bg-mesh: 
+                radial-gradient(at 40% 20%, hsla(217, 91%, 35%, 0.3) 0px, transparent 50%),
+                radial-gradient(at 80% 0%, hsla(189, 85%, 52%, 0.2) 0px, transparent 50%),
+                radial-gradient(at 0% 50%, hsla(217, 91%, 25%, 0.2) 0px, transparent 50%);
+            
+            /* 主色调 */
+            --cyan-vivid: #22d3ee;
+            --cyan: #06b6d4;
+            --cyan-dim: #0891b2;
+            
+            --blue-vivid: #60a5fa;
+            --blue: #3b82f6;
+            --blue-dim: #2563eb;
+            
+            --purple: #a855f7;
+            --purple-dim: #9333ea;
+            
+            /* 强调色 */
+            --accent-primary: #22d3ee;
+            --accent-secondary: #a855f7;
+            --accent-warning: #fbbf24;
+            --accent-success: #34d399;
+            
+            /* 文本层次 */
+            --text-primary: #f8fafc;
+            --text-secondary: #e2e8f0;
+            --text-tertiary: #cbd5e1;
             --text-dim: #94a3b8;
+            --text-muted: #64748b;
+            
+            /* 玻璃态效果 */
+            --glass-bg: rgba(15, 23, 42, 0.6);
+            --glass-border: rgba(148, 163, 184, 0.2);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            
+            /* 字体家族 */
+            --font-display: 'Outfit', sans-serif;
+            --font-body: 'Inter', sans-serif;
+            --font-code: 'JetBrains Mono', monospace;
         }
 
         @keyframes fadeInUp {
@@ -28,9 +72,11 @@
         body {
             margin: 0;
             padding: 0;
-            font-family: "JetBrains Mono", "Fira Code", "Segoe UI", monospace;
-            background: var(--bg-gradient);
-            color: var(--text-main);
+            font-family: var(--font-body);
+            background: var(--bg-deep);
+            background-image: var(--bg-mesh);
+            background-attachment: fixed;
+            color: var(--text-primary);
             overflow: hidden;
             line-height: 1.6;
         }
@@ -44,7 +90,7 @@
             align-items: center;
             padding: 4rem 6rem;
             box-sizing: border-box;
-            background: var(--bg-gradient);
+            background: transparent;
             opacity: 0;
             transform: translateX(50px) scale(0.95);
             transition: opacity 0.6s ease, transform 0.6s ease;
@@ -59,44 +105,122 @@
         .slide-content {
             max-width: 70%;
             text-align: center;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 3rem;
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
 
         .slide h1 {
+            font-family: var(--font-display);
             font-size: 3.5rem;
-            margin-bottom: 1rem;
-            background: linear-gradient(90deg, var(--cyan), var(--blue));
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+            
+            /* 多层渐变 */
+            background: linear-gradient(
+                135deg, 
+                #22d3ee 0%, 
+                #60a5fa 50%, 
+                #a855f7 100%
+            );
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            border-left: 6px solid var(--blue);
-            padding-left: 2rem;
-            letter-spacing: 1px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            background-clip: text;
+            
+            /* 移除边框，使用阴影代替 */
+            border-left: none;
+            padding-left: 0;
+            
+            /* 发光效果 */
+            filter: drop-shadow(0 0 20px rgba(34, 211, 238, 0.4));
+            
+            /* 动画 */
+            animation: titleGlow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes titleGlow {
+            from {
+                filter: drop-shadow(0 0 20px rgba(34, 211, 238, 0.4));
+            }
+            to {
+                filter: drop-shadow(0 0 30px rgba(96, 165, 250, 0.6));
+            }
         }
 
         .slide h2 {
-            font-size: 3rem;
-            margin-bottom: 1.5rem;
-            color: var(--text-dim);
-            border-left: 4px solid var(--cyan);
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            color: var(--text-primary);
+            
+            /* 左侧强调条 */
+            border-left: 4px solid var(--accent-primary);
             padding-left: 1.5rem;
-            text-align: left;
+            
+            /* 渐变背景 */
+            position: relative;
+            padding-bottom: 0.5rem;
+        }
+
+        .slide h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-primary), transparent);
+            border-radius: 2px;
         }
 
         .slide ul {
-            list-style-type: none;
+            list-style: none;
             padding-left: 0;
-            font-size: 1.6rem;
-            text-align: left;
+            font-size: 1.5rem;
         }
 
         .slide li {
-            margin-bottom: 0.8rem;
-            padding-left: 2rem;
+            margin-bottom: 1.2rem;
+            padding: 1rem 1.5rem;
+            padding-left: 3rem;
             position: relative;
-            line-height: 1.6;
+            
+            /* 玻璃态背景 */
+            background: rgba(30, 41, 59, 0.3);
+            backdrop-filter: blur(8px);
+            border-left: 3px solid transparent;
+            border-radius: 8px;
+            
+            /* 过渡效果 */
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            
+            /* 动画保持 */
             opacity: 0;
-            transform: translateY(20px);
-            animation: fadeInUp 0.5s ease forwards;
+            transform: translateX(-20px);
+            animation: slideInLeft 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        @keyframes slideInLeft {
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* 悬停效果 */
+        .slide li:hover {
+            background: rgba(30, 41, 59, 0.5);
+            border-left-color: var(--accent-primary);
+            transform: translateX(8px);
+            box-shadow: 0 4px 12px rgba(34, 211, 238, 0.2);
         }
 
         .slide li:nth-child(1) { animation-delay: 0.1s; }
@@ -107,11 +231,12 @@
         .slide li:nth-child(6) { animation-delay: 0.6s; }
 
         .slide li::before {
-            content: ">";
+            content: "▸";
             position: absolute;
-            left: 0;
-            color: var(--cyan);
+            left: 1rem;
+            color: var(--accent-primary);
             font-weight: bold;
+            font-size: 1.2em;
         }
 
         .slide p {
@@ -126,7 +251,13 @@
             bottom: 2rem;
             right: 3rem;
             font-size: 1rem;
-            color: var(--text-dim);
+            color: var(--text-muted);
+            background: var(--glass-bg);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            box-shadow: var(--glass-shadow);
         }
 
         #progress {
@@ -134,10 +265,13 @@
             top: 2rem;
             right: 3rem;
             font-size: 1.2rem;
-            color: var(--text-dim);
-            background: rgba(0,0,0,0.3);
-            padding: 0.5rem 1rem;
+            color: var(--text-secondary);
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
             border-radius: 20px;
+            padding: 0.5rem 1rem;
+            box-shadow: var(--glass-shadow);
         }
 
         .controls {
@@ -146,7 +280,13 @@
             left: 3rem;
             font-size: 1rem;
             color: var(--text-dim);
-            opacity: 0.7;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 0.5rem 1rem;
+            box-shadow: var(--glass-shadow);
+            opacity: 0.8;
         }
 
         #nav {
@@ -162,33 +302,42 @@
             width: 12px;
             height: 12px;
             border-radius: 50%;
-            background-color: #555;
+            background-color: rgba(148, 163, 184, 0.3);
+            backdrop-filter: blur(4px);
             cursor: pointer;
-            transition: background-color 0.3s, transform 0.3s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid var(--glass-border);
         }
 
         .nav-dot:hover {
             transform: scale(1.2);
+            background-color: var(--accent-primary);
+            box-shadow: 0 0 10px rgba(34, 211, 238, 0.5);
         }
 
         .nav-dot.active {
-            background-color: var(--blue);
+            background-color: var(--accent-primary);
+            box-shadow: 0 0 15px rgba(34, 211, 238, 0.8);
         }
 
         .slide pre {
-            background: rgba(0,0,0,0.3);
-            border: 1px solid var(--cyan);
-            border-radius: 8px;
+            background: rgba(10, 14, 26, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(34, 211, 238, 0.3);
+            border-radius: 12px;
+            box-shadow: 
+                0 4px 16px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(34, 211, 238, 0.1);
             padding: 1rem;
             margin: 1rem 0;
             font-size: 1.2rem;
-            color: var(--text-main);
+            color: var(--text-primary);
             overflow-x: auto;
             text-align: left;
         }
 
         .slide code {
-            font-family: "JetBrains Mono", "Fira Code", monospace;
+            font-family: var(--font-code);
         }
     </style>
 </head>
@@ -459,6 +608,46 @@
     </section>
 
     <section class="slide" id="slide15">
+        <div class="slide-content">
+            <h2>编译开关对内存的影响</h2>
+            <h3>创建10000个IP Table的命令</h3>
+            <pre style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; font-size: 0.9rem;">
+for i in {1..10000}; do
+  vppctl ip table add $i
+done
+# 然后查看内存变化
+vppctl show memory main-heap
+            </pre>
+            <p>相同配置下创建1万个VRF的内存对比</p>
+            <div class="comparison" style="display: flex; justify-content: space-around; align-items: flex-start;">
+                <div class="memory-block" style="flex: 1; margin: 0 10px;">
+                    <h3>开关打开16-8-8)</h3>
+                    <pre style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; font-size: 0.8rem; overflow-x: auto;">
+vpp# sh memory main-heap
+Thread 0 vpp_main
+  base 0x7fb7e8202000, size 8g, locked, unmap-on-destroy, name 'main heap'
+    page stats: page-size 4K, total 2097152, mapped 445468, not-mapped 905056, unknown 746628
+      numa 0: 445468 pages, 1.70g bytes
+    total: 8.00G, used: 4.92G, free: 3.08G, trimmable: 3.02G
+                    </pre>
+                </div>
+                <div class="memory-block" style="flex: 1; margin: 0 10px;">
+                    <h3>开关打开 (8-8-8-8)</h3>
+                    <pre style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; font-size: 0.8rem; overflow-x: auto;">
+vppctl show memory main-heap
+Thread 0 vpp_main
+  main-heap: 1.50G bytes, 1.50G used, 0 bytes free, 0 bytes reclaimed
+  page stats: 393216 pages, 393216 mapped, 0 eligible, 0 alloc, 0 free
+  num allocs: 98765, alloc bytes: 1.50G, free bytes: 0
+                    </pre>
+                </div>
+            </div>
+            <p style="text-align: center; margin-top: 20px;">8-8-8-8 配置下内存使用减少约25%</p>
+        </div>
+        <div class="footer">工程项目实战分享</div>
+    </section>
+
+    <section class="slide" id="slide16">
         <div class="glass-card fade-in">
             <h2>联系我们 / 加入探讨</h2>
             <div style="margin: 20px 0;">
@@ -471,7 +660,7 @@
         <div class="footer">工程项目实战分享</div>
     </section>
 
-    <div id="progress">1/15</div>
+    <div id="progress">1/16</div>
     <div class="controls">使用 ← → 或空格键翻页</div>
     <div id="nav"></div>
     <script>
