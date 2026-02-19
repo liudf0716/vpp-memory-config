@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>2026 马年春节 · 马到成功</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@400;500;700;900&family=ZCOOL+QingKe+HuangYou&display=swap"
+        rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+
+    <style>
+        :root {
+            --bili-pink: #e74c3c;
+            /* Festive Red */
+            --bili-blue: #f1c40f;
+            /* Luxury Gold */
+            --bg: #2c0000;
+            /* Dark Red Background */
+        }
+
+        body {
+            font-family: 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background:
+                radial-gradient(1200px 700px at 50% -10%, rgba(241, 196, 15, 0.16), transparent 55%),
+                radial-gradient(900px 520px at 15% 20%, rgba(231, 76, 60, 0.15), transparent 60%),
+                radial-gradient(700px 420px at 85% 25%, rgba(231, 76, 60, 0.1), transparent 60%),
+                var(--bg);
+            color: #e5e7eb;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            /* Crisp text */
+            -moz-osx-font-smoothing: grayscale;
+            min-height: 100vh;
+        }
+
+        .page-shell {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.015));
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+            border-radius: 1.5rem;
+            backdrop-filter: blur(7px);
+            -webkit-backdrop-filter: blur(7px);
+        }
+
+        .section-card {
+            width: 100%;
+            border-radius: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0.18));
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        .section-card-soft {
+            border: 1px solid rgba(241, 196, 15, 0.32);
+            background: linear-gradient(135deg, rgba(231, 76, 60, 0.16), rgba(241, 196, 15, 0.08));
+        }
+
+        /* 隐藏滚动条 (Cinematic Look) */
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+
+        /* 暗角（减弱） */
+        .vignette {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background: radial-gradient(circle at center, transparent 55%, rgba(0, 0, 0, .65));
+            z-index: 2;
+        }
+
+        /* 粒子 */
+        #canvas-bg {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            opacity: .35;
+        }
+
+        /* 字幕 */
+        .cinematic-line {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 1s cubic-bezier(0.22, 1, 0.36, 1);
+            /* Smoother ease-out */
+            letter-spacing: .08em;
+            line-height: 2.25;
+            font-weight: 500;
+            /* More breathing room */
+            text-shadow: 0 2px 4px rgba(0, 0, 0, .8);
+        }
+
+        .brand-font {
+            font-family: 'ZCOOL QingKe HuangYou', 'Noto Sans SC', sans-serif;
+            letter-spacing: .14em;
+            font-size: 1.14em;
+        }
+
+        .festival-font {
+            font-family: 'Ma Shan Zheng', 'Noto Sans SC', cursive;
+            font-size: 1.2em;
+            letter-spacing: .08em;
+        }
+
+        .cinematic-line.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 字符跳动动画 (Reference Based) */
+        .char {
+            display: inline-block;
+            white-space: pre;
+        }
+
+        .char.jumping {
+            animation: jump 2.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        @keyframes jump {
+            0%,
+            100% {
+                transform: scale(1);
+                text-shadow: none;
+            }
+
+            18% {
+                transform: scale(1.14);
+            }
+
+            36% {
+                transform: scale(1.35);
+                color: #e74c3c;
+                /* Festive Red */
+                text-shadow: 0 0 15px rgba(231, 76, 60, 0.6), 0 0 30px rgba(231, 76, 60, 0.4);
+                /* Red Glow */
+            }
+
+            58% {
+                transform: scale(1.08);
+                text-shadow: 0 0 8px rgba(231, 76, 60, 0.35);
+            }
+
+            78% {
+                transform: scale(1.02);
+            }
+        }
+
+        /* 高亮 */
+        .highlight-pink {
+            color: var(--bili-pink);
+            font-family: 'ZCOOL QingKe HuangYou', 'Noto Sans SC', sans-serif;
+            font-weight: 400;
+            font-size: 1.2em;
+            /* Relative scale */
+        }
+
+        .highlight-blue {
+            color: var(--bili-blue);
+            font-family: 'ZCOOL QingKe HuangYou', 'Noto Sans SC', sans-serif;
+            font-weight: 400;
+            font-size: 1.2em;
+            border-bottom: 2px solid var(--bili-blue);
+        }
+
+        /* 小电视 */
+        .tv-icon {
+            animation: float 5s ease-in-out infinite;
+            color: var(--bili-pink);
+            filter: drop-shadow(0 0 18px rgba(231, 76, 60, 0.35));
+        }
+
+        @keyframes float {
+            50% {
+                transform: translateY(-12px);
+            }
+        }
+
+        /* 数字 */
+        .counter-font {
+            font-family: 'ZCOOL QingKe HuangYou', 'Noto Sans SC', system-ui, sans-serif;
+            letter-spacing: 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* 按钮 */
+        .hold-btn {
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            /* Safari */
+            filter: drop-shadow(0 12px 22px rgba(0, 0, 0, 0.45));
+        }
+
+        .hold-btn:active {
+            transform: scale(.96);
+        }
+
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+
+        .progress-ring__circle {
+            transition: stroke-dashoffset .12s linear;
+        }
+
+        #text-container {
+            max-width: 46rem;
+        }
+
+        #counter {
+            text-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+        }
+
+        /* 三连图标 */
+        .combo-icon {
+            opacity: 0;
+            transform: scale(.2);
+            transition: all .5s cubic-bezier(.2, .8, .2, 1.2);
+        }
+
+        .combo-active .combo-icon {
+            opacity: 1;
+        }
+
+        .combo-active .icon-1 {
+            transform: translate(-60px, -90px) scale(1);
+        }
+
+        .combo-active .icon-2 {
+            transform: translate(0, -120px) scale(1.15);
+        }
+
+        .combo-active .icon-3 {
+            transform: translate(60px, -90px) scale(1);
+        }
+
+        /* Lanterns */
+        .lantern-container {
+            position: fixed;
+            top: 0;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .lantern-container.left {
+            left: 5%;
+        }
+
+        .lantern-container.right {
+            right: 5%;
+        }
+
+        .lantern {
+            position: relative;
+            width: 80px;
+            height: 60px;
+            background: #e74c3c;
+            border-radius: 30px;
+            box-shadow: 0 0 20px rgba(231, 76, 60, 0.6);
+            animation: swing 3s ease-in-out infinite alternate;
+            transform-origin: top center;
+        }
+
+        .lantern::before {
+            /* Cap */
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 25px;
+            width: 30px;
+            height: 10px;
+            background: #d35400;
+            border-radius: 4px;
+        }
+
+        .lantern::after {
+            /* Tassel */
+            content: '';
+            position: absolute;
+            bottom: -30px;
+            left: 38px;
+            width: 4px;
+            height: 30px;
+            background: #f1c40f;
+            box-shadow: 0 0 5px #f1c40f;
+        }
+
+        .lantern-line {
+            width: 2px;
+            height: 50px;
+            background: #c0392b;
+            margin: 0 auto;
+        }
+
+        @keyframes swing {
+            from {
+                transform: rotate(-5deg);
+            }
+
+            to {
+                transform: rotate(5deg);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .cinematic-line,
+            .char.jumping,
+            .tv-icon,
+            .lantern,
+            .combo-icon,
+            .progress-ring__circle {
+                animation: none !important;
+                transition: none !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .page-shell {
+                border-radius: 1rem;
+            }
+
+            .cinematic-line {
+                letter-spacing: .04em;
+                line-height: 2.1;
+            }
+
+            .brand-font {
+                font-size: 1.08em;
+            }
+
+            .festival-font {
+                font-size: 1.36em;
+            }
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex items-center justify-center selection:bg-red-500 selection:text-white">
+
+    <div class="lantern-container left">
+        <div class="lantern-line"></div>
+        <div class="lantern" style="animation-delay: 0s;"></div>
+    </div>
+    <div class="lantern-container right">
+        <div class="lantern-line"></div>
+        <div class="lantern" style="animation-delay: 1.5s;"></div>
+    </div>
+
+    <div class="vignette"></div>
+    <canvas id="canvas-bg"></canvas>
+
+    <div class="page-shell max-w-4xl w-full px-5 md:px-10 py-10 md:py-14 flex flex-col items-center z-10 mx-4 md:mx-0">
+
+        <div class="brand-font text-sm md:text-base text-yellow-300/80 mb-4 font-sans text-center">
+            2026 马年春节 · 特别发布
+        </div>
+
+        <div class="mb-6 md:mb-8 text-5xl md:text-7xl tv-icon">
+            <i class="fa-solid fa-horse-head"></i>
+        </div>
+
+        <div id="text-container"
+            class="section-card text-center text-3xl md:text-5xl space-y-7 md:space-y-6 px-5 md:px-8 py-7 md:py-9 font-medium"></div>
+
+        <div id="milestone-section"
+            class="section-card section-card-soft mt-8 md:mt-12 px-6 py-7 md:py-8 opacity-0 transition-all duration-1000 scale-95">
+            <div class="brand-font text-base md:text-lg text-gray-500 mb-4 font-sans text-center">
+                马年春节里程碑
+            </div>
+            <div id="counter" class="text-6xl md:text-9xl font-extrabold text-center text-transparent bg-clip-text
+                   bg-gradient-to-br from-red-500 via-red-400 to-yellow-400
+                   counter-font">
+                0
+            </div>
+        </div>
+
+        <div id="action-area"
+            class="section-card mt-8 md:mt-10 px-6 md:px-8 py-8 md:py-9 opacity-0 transition-opacity duration-1000 flex flex-col items-center relative">
+
+            <div id="combo-container" class="absolute pointer-events-none">
+                <i class="fa-solid fa-thumbs-up text-4xl text-red-400 absolute combo-icon icon-1"></i>
+                <i class="fa-solid fa-coins text-4xl text-red-400 absolute combo-icon icon-2"></i>
+                <i class="fa-solid fa-star text-4xl text-red-400 absolute combo-icon icon-3"></i>
+            </div>
+
+            <p class="text-base md:text-lg text-red-300 mb-6 tracking-widest font-sans text-center">
+                长按 · 一键三连
+            </p>
+
+            <div id="hold-btn"
+                class="hold-btn relative w-28 h-28 flex items-center justify-center cursor-pointer select-none"
+                role="button" tabindex="0" aria-label="长按完成一键三连">
+                <svg class="progress-ring absolute w-full h-full" viewBox="0 0 96 96">
+                    <circle stroke="#1f2937" stroke-width="3" fill="none" r="46" cx="48" cy="48"
+                        style="transform: rotate(-90deg); transform-origin: 50% 50%;" />
+                    <circle id="progress-circle" class="progress-ring__circle" stroke="var(--bili-pink)"
+                        stroke-width="4" fill="none" r="46" cx="48" cy="48" stroke-linecap="round"
+                        stroke-dasharray="289" stroke-dashoffset="289"
+                        style="transform: rotate(-90deg); transform-origin: 50% 50%;" />
+                </svg>
+                <div id="btn-inner" class="w-20 h-20 rounded-full bg-gray-900 border border-gray-700
+                       flex items-center justify-center transition-all active:scale-95">
+                    <i id="btn-icon" class="fa-solid fa-bolt text-gray-400 text-3xl transition-all"></i>
+                </div>
+            </div>
+
+            <p class="festival-font mt-8 text-lg md:text-xl text-gray-400 font-sans tracking-wider">
+                感谢每一个支持的你
+            </p>
+        </div>
+    </div>
+
+    <script>
+        /* —— JS Logic —— */
+
+        const textLines = [
+            "在马年春节，2026年遇上2026个关注者，意味着什么？",
+            "或许在很多人眼里，这只是一个巧合的数字重合。",
+            "但对我来说，这段路走得远比想象中艰难。",
+            "没有光环，没有流量，",
+            "只有深夜反复修改的视频时间轴。",
+            "和从零开始的孤独。",
+            "每一个关注，都是一个真实的人。",
+            "马年春节这天，刚好迎来2026个关注者。",
+            "这不是巧合，是我们一起走过的里程碑。",
+            "如果你也在路上，",
+            "请给我一个一键三连。",
+            "愿新一年策马奔腾，我们一起继续走下去。"
+        ];
+
+        const container = document.getElementById('text-container');
+        const milestone = document.getElementById('milestone-section');
+        const actionArea = document.getElementById('action-area');
+        const counter = document.getElementById('counter');
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        let narrativeTimeouts = [];
+        let counterFrameId = null;
+        let isCounterAnimating = false;
+        let hasStartedNarrativeScroll = false;
+
+        function shouldScrollNarrativeLine(lineElement) {
+            if (hasStartedNarrativeScroll) return true;
+            const lineRect = lineElement.getBoundingClientRect();
+            const triggerY = window.innerHeight * 0.9;
+            if (lineRect.bottom >= triggerY) {
+                hasStartedNarrativeScroll = true;
+                return true;
+            }
+            return false;
+        }
+
+        // Helper to process line into jumping characters
+        function processLine(text) {
+            let parts = [];
+            let lastIndex = 0;
+            const regex = /(2026个粉丝|2026个关注者|2026|一键三连)/g;
+            let match;
+
+            while ((match = regex.exec(text)) !== null) {
+                if (match.index > lastIndex) {
+                    parts.push({ text: text.slice(lastIndex, match.index), type: 'normal' });
+                }
+                let type = match[0] === '一键三连' ? 'blue' : 'pink';
+                parts.push({ text: match[0], type: type });
+                lastIndex = regex.lastIndex;
+            }
+            if (lastIndex < text.length) {
+                parts.push({ text: text.slice(lastIndex), type: 'normal' });
+            }
+
+            // Re-map with indices
+            return parts.map(part => {
+                let className = 'char';
+                if (part.type === 'pink') className += ' highlight-pink';
+                if (part.type === 'blue') className += ' highlight-blue';
+                return part.text.split('').map(char => {
+                    const content = char === ' ' ? '&nbsp;' : char;
+                    return `<span class="${className}">${content}</span>`;
+                }).join('');
+            }).join('');
+        }
+
+        function playNarrative() {
+            let cumulativeDelay = 1200;
+
+            textLines.forEach((line, lineIndex) => {
+                const p = document.createElement('p');
+                p.className = 'cinematic-line';
+                p.innerHTML = processLine(line);
+                container.appendChild(p);
+
+                const charCount = p.querySelectorAll('.char').length;
+
+                const lineTimeoutId = setTimeout(() => {
+                    p.classList.add('visible');
+
+                    // Retrieve chars and apply staggered delay AND trigger animation
+                    const chars = p.querySelectorAll('.char');
+                    chars.forEach((char, index) => {
+                        // Reference: (index + 1) * 0.1s
+                        char.style.animationDelay = `${(index + 1) * 0.12}s`;
+                        char.classList.add('jumping');
+                    });
+
+                    const shouldScrollLine = !(isCounterAnimating && lineIndex > 7) && shouldScrollNarrativeLine(p);
+                    if (shouldScrollLine) {
+                        p.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth', block: 'center' });
+                    }
+
+                    // Triggers
+                    if (lineIndex === 7) {
+                        const milestoneTimeoutId = setTimeout(() => {
+                            milestone.classList.remove('opacity-0', 'scale-95');
+                            milestone.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth', block: 'center' });
+                            animateCounter(2026, 4200);
+                        }, 2000);
+                        narrativeTimeouts.push(milestoneTimeoutId);
+                    }
+                    if (lineIndex === textLines.length - 1) {
+                        const actionTimeoutId = setTimeout(() => {
+                            actionArea.classList.remove('opacity-0');
+                            actionArea.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth', block: 'center' });
+                        }, 2600);
+                        narrativeTimeouts.push(actionTimeoutId);
+                    }
+
+                }, cumulativeDelay);
+
+                narrativeTimeouts.push(lineTimeoutId);
+                cumulativeDelay += Math.max(3200, charCount * 180); // Dynamic delay
+            });
+        }
+
+        function animateCounter(target, duration) {
+            isCounterAnimating = true;
+            const startTime = performance.now();
+            function tick(t) {
+                const p = Math.min((t - startTime) / duration, 1);
+                const eased = p < 0.5
+                    ? 4 * p * p * p
+                    : 1 - Math.pow(-2 * p + 2, 3) / 2;
+                counter.textContent = Math.floor(target * eased);
+                if (p < 1) {
+                    counterFrameId = requestAnimationFrame(tick);
+                    return;
+                }
+                isCounterAnimating = false;
+                counterFrameId = null;
+            }
+            counterFrameId = requestAnimationFrame(tick);
+        }
+
+        /* —— Long Press Interaction —— */
+        const holdBtn = document.getElementById('hold-btn');
+        const progressCircle = document.getElementById('progress-circle');
+        const btnInner = document.getElementById('btn-inner');
+        const btnIcon = document.getElementById('btn-icon');
+        const comboContainer = document.getElementById('combo-container');
+
+        // Circle properties
+        const radius = progressCircle.r.baseVal.value;
+        const circumference = radius * 2 * Math.PI;
+        progressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
+        progressCircle.style.strokeDashoffset = circumference;
+
+        let isHolding = false;
+        let progress = 0;
+        let animationFrame;
+        let isDone = false;
+
+        function resetReplayState() {
+            narrativeTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
+            narrativeTimeouts = [];
+
+            if (counterFrameId) {
+                cancelAnimationFrame(counterFrameId);
+                counterFrameId = null;
+            }
+            isCounterAnimating = false;
+            hasStartedNarrativeScroll = false;
+
+            cancelAnimationFrame(animationFrame);
+            isHolding = false;
+            isDone = false;
+            progress = 0;
+
+            progressCircle.style.strokeDashoffset = circumference;
+            btnInner.style.transform = "scale(1)";
+
+            btnIcon.className = "fa-solid fa-bolt text-gray-400 text-3xl transition-all";
+            btnInner.classList.remove("bg-red-100", "border-red-300");
+            btnInner.classList.add("bg-gray-900", "border-gray-700");
+            comboContainer.classList.remove('combo-active');
+
+            milestone.classList.add('opacity-0', 'scale-95');
+            actionArea.classList.add('opacity-0');
+            counter.textContent = '0';
+            container.innerHTML = '';
+
+            window.scrollTo({ top: 0, behavior: 'auto' });
+            playNarrative();
+        }
+
+        function startHold(e) {
+            if (isDone) return;
+            e.preventDefault(); // Prevent text selection / context menu
+            isHolding = true;
+            btnInner.style.transform = "scale(0.9)";
+            tick();
+        }
+
+        function endHold() {
+            if (isDone) return;
+            isHolding = false;
+            btnInner.style.transform = "scale(1)";
+            cancelAnimationFrame(animationFrame);
+            // Reverse animation if not complete
+            reverseTick();
+        }
+
+        function tick() {
+            if (!isHolding) return;
+            progress += 2; // Speed of filling
+            const offset = circumference - (progress / 100) * circumference;
+            progressCircle.style.strokeDashoffset = offset;
+
+            if (progress >= 100) {
+                complete();
+            } else {
+                animationFrame = requestAnimationFrame(tick);
+            }
+        }
+
+        function reverseTick() {
+            if (isHolding || progress <= 0) return;
+            progress -= 4; // Speed of emptying
+            const offset = circumference - (progress / 100) * circumference;
+            progressCircle.style.strokeDashoffset = offset;
+
+            if (progress > 0) {
+                animationFrame = requestAnimationFrame(reverseTick);
+            }
+        }
+
+        function complete() {
+            isDone = true;
+            isHolding = false;
+            cancelAnimationFrame(animationFrame);
+            progressCircle.style.strokeDashoffset = 0;
+
+            // Haptic feedback
+            if (navigator.vibrate) navigator.vibrate(50);
+
+            // Change Icon
+            btnIcon.className = "fa-solid fa-check text-red-500 text-4xl";
+            btnInner.classList.remove("bg-gray-900", "border-gray-700");
+            btnInner.classList.add("bg-red-100", "border-red-300");
+
+            // Show Combo
+            comboContainer.classList.add('combo-active');
+
+            // Reset button scale
+            btnInner.style.transform = "scale(1)";
+        }
+
+        // Mouse Events
+        holdBtn.addEventListener('mousedown', startHold);
+        holdBtn.addEventListener('mouseup', endHold);
+        holdBtn.addEventListener('mouseleave', endHold);
+
+        // Touch Events
+        holdBtn.addEventListener('touchstart', startHold, { passive: false });
+        holdBtn.addEventListener('touchend', endHold);
+        holdBtn.addEventListener('touchcancel', endHold);
+
+        holdBtn.addEventListener('keydown', (e) => {
+            if ((e.key === 'Enter' || e.key === ' ') && !isHolding) {
+                startHold(e);
+            }
+        });
+        holdBtn.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                endHold();
+            }
+        });
+
+        // Prevent context menu
+        holdBtn.addEventListener('contextmenu', e => e.preventDefault());
+
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('#hold-btn')) return;
+            resetReplayState();
+        });
+
+        /* —— Gold Dust Particles —— */
+        const canvas = document.getElementById('canvas-bg');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let particles = [];
+        let particleFrameId = null;
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            initParticles();
+        }
+
+        function initParticles() {
+            particles = [];
+            const count = Math.floor(width * height / 15000); // Density
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    vx: (Math.random() - 0.5) * 0.5,
+                    vy: (Math.random() - 0.5) * 0.5,
+                    size: Math.random() * 2 + 0.5,
+                    alpha: Math.random() * 0.5 + 0.1,
+                    flashSpeed: Math.random() * 0.02 + 0.005
+                });
+            }
+        }
+
+        function drawParticles() {
+            ctx.clearRect(0, 0, width, height);
+            ctx.fillStyle = '#f1c40f'; // Gold
+            const now = Date.now();
+
+            particles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha += Math.sin(now * p.flashSpeed) * 0.01;
+
+                if (p.x < 0) p.x = width;
+                if (p.x > width) p.x = 0;
+                if (p.y < 0) p.y = height;
+                if (p.y > height) p.y = 0;
+
+                ctx.globalAlpha = Math.max(0.1, Math.min(1, p.alpha));
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            particleFrameId = requestAnimationFrame(drawParticles);
+        }
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                if (particleFrameId) cancelAnimationFrame(particleFrameId);
+                particleFrameId = null;
+                return;
+            }
+            if (!particleFrameId) drawParticles();
+        });
+
+        window.addEventListener('resize', resize);
+        resize();
+        playNarrative();
+        drawParticles();
+
+    </script>
+
+</body>
+
+</html>
