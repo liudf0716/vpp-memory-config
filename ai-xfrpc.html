@@ -1,0 +1,810 @@
+<!-- =========================
+  视频封面专用版（B 站 16:9）
+  用法：
+  1. 单独复制本段到一个新 HTML 文件
+  2. 浏览器打开，全屏截图即可作为 B 站封面
+========================= -->
+<!--
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>B站封面 - AI Agent 内网穿透</title>
+<style>
+  body{
+    margin:0;
+    width:100vw;
+    height:100vh;
+    font-family:"Inter","PingFang SC","Microsoft YaHei",sans-serif;
+    background:linear-gradient(135deg,#ec4899,#8b5cf6,#38bdf8);
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .cover{
+    width:1920px;
+    height:1080px;
+    padding:140px;
+    box-sizing:border-box;
+    position:relative;
+  }
+  h1{
+    font-size:120px;
+    line-height:1.15;
+    margin:0 0 40px 0;
+    text-shadow:0 20px 60px rgba(0,0,0,.45);
+  }
+  .sub{
+    font-size:48px;
+    opacity:.95;
+  }
+  .tags{
+    margin-top:60px;
+    font-size:34px;
+    opacity:.9;
+  }
+  .author{
+    position:absolute;
+    right:120px;
+    bottom:90px;
+    font-size:32px;
+    opacity:.85;
+  }
+</style>
+</head>
+<body>
+  <div class="cover">
+    <h1>AI Agent<br/>一键打通内网</h1>
+    <div class="sub">用大模型给 OpenWrt 配内网穿透</div>
+    <div class="tags">#OpenWrt #AI自动化 #内网穿透</div>
+    <div class="author">staylight · 技术向</div>
+  </div>
+</body>
+</html>
+-->
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Agent 玩转 OpenWrt 内网穿透</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #030712;
+      --bg-card: rgba(17, 24, 39, 0.7);
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.3);
+      --text-main: #f3f4f6;
+      --text-sub: #9ca3af;
+      --slide-transition: 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    body {
+      margin: 0;
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* 背景装饰 */
+    .bg-dots {
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(#1f2937 1px, transparent 1px);
+      background-size: 40px 40px;
+      opacity: 0.3;
+      z-index: -1;
+    }
+
+    .bg-gradient {
+      position: fixed;
+      top: -10%;
+      left: -10%;
+      width: 40%;
+      height: 40%;
+      background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+      filter: blur(80px);
+      z-index: -1;
+      animation: drift 20s infinite alternate linear;
+    }
+
+    @keyframes drift {
+      from {
+        transform: translate(0, 0);
+      }
+
+      to {
+        transform: translate(50vw, 30vh);
+      }
+    }
+
+    .slide-container {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 0 5%;
+      background: radial-gradient(circle at center, #111827 0%, var(--bg-main) 100%);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(20px) scale(0.98);
+      transition: all var(--slide-transition);
+      z-index: 1;
+    }
+
+    .slide.active {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0) scale(1);
+    }
+
+    .slide.prev {
+      transform: translateY(-20px) scale(0.98);
+      opacity: 0;
+    }
+
+    h1 {
+      font-size: 5rem;
+      font-weight: 800;
+      margin: 0 0 1rem 0;
+      background: linear-gradient(to bottom right, #fff, #9ca3af);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1.1;
+    }
+
+    h2 {
+      font-size: 4rem;
+      font-weight: 800;
+      margin-bottom: 3rem;
+      background: linear-gradient(135deg, #fff 0%, var(--accent) 50%, #a78bfa 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1.1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .slide-content {
+      max-width: 1400px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      z-index: 10;
+    }
+
+    p {
+      font-size: 2rem;
+      line-height: 1.6;
+      color: var(--text-sub);
+      margin-bottom: 2rem;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      text-align: left;
+      display: inline-block;
+    }
+
+    li {
+      font-size: 1.8rem;
+      line-height: 1.5;
+      margin-bottom: 1.5rem;
+      padding-left: 2.5rem;
+      position: relative;
+      opacity: 0;
+      transform: translateX(-20px);
+      transition: all 0.4s ease-out;
+    }
+
+    li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-weight: bold;
+    }
+
+    li.step-visible {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    /* 移除空的特定样式，统一使用基础样式 */
+
+    .slide.cover h1 {
+      font-size: 6rem;
+      margin-bottom: 2rem;
+      background: linear-gradient(135deg, #fff 0%, var(--accent) 50%, #a78bfa 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+    }
+
+    .tag-container {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin-top: 3rem;
+    }
+
+    .tag {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 0.5rem 1.5rem;
+      border-radius: 99px;
+      font-size: 1.2rem;
+      color: var(--text-sub);
+    }
+
+    /* 代码块样式 */
+    pre {
+      display: inline-block;
+      text-align: left;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 2.5rem;
+      border-radius: 1.5rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.4rem;
+      line-height: 1.5;
+      color: #e5e7eb;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      position: relative;
+      overflow: hidden;
+      margin: 1rem 0;
+    }
+
+    pre::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    }
+
+    .highlight {
+      color: var(--accent);
+      font-weight: bold;
+    }
+
+    /* 进度条 */
+    .progress-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      height: 4px;
+      background: var(--accent);
+      box-shadow: 0 0 10px var(--accent);
+      transition: width 0.3s ease;
+      z-index: 100;
+    }
+
+    /* 底部指示器 */
+    .slide-info {
+      position: fixed;
+      bottom: 2rem;
+      right: 3rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.2rem;
+      color: var(--text-sub);
+      opacity: 0.5;
+    }
+
+    /* 录屏专用控件 (自动隐藏) */
+    .controls {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 1rem;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(10px);
+      padding: 0.8rem;
+      border-radius: 99px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 1000;
+    }
+
+    body:hover .controls {
+      opacity: 1;
+    }
+
+    .control-btn {
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      border-radius: 99px;
+      transition: background 0.2s;
+    }
+
+    .control-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    /* 针对录屏的微调 */
+    ::selection {
+      background: var(--accent);
+      color: var(--bg-main);
+    }
+
+    /* 封面动画背景扩展 */
+    .cover-bg-extra {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      z-index: 5;
+    }
+
+    .energy-orb {
+      position: absolute;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--accent) 0%, transparent 60%);
+      filter: blur(40px);
+      opacity: 0.6;
+      mix-blend-mode: screen;
+      animation: orb-float 20s infinite alternate ease-in-out;
+    }
+
+    .energy-orb:nth-child(1) {
+      width: 600px;
+      height: 600px;
+      top: -100px;
+      left: -100px;
+      animation-duration: 25s;
+    }
+
+    .energy-orb:nth-child(2) {
+      width: 500px;
+      height: 500px;
+      bottom: -100px;
+      right: -100px;
+      animation-duration: 18s;
+      animation-delay: -5s;
+    }
+
+    .energy-orb:nth-child(3) {
+      width: 400px;
+      height: 400px;
+      top: 40%;
+      left: 60%;
+      animation-duration: 22s;
+      animation-delay: -10s;
+    }
+
+    @keyframes orb-float {
+      0% {
+        transform: translate(0, 0) scale(1) rotate(0deg);
+      }
+
+      50% {
+        transform: translate(100px, 50px) scale(1.1) rotate(10deg);
+      }
+
+      100% {
+        transform: translate(-50px, 100px) scale(0.9) rotate(-10deg);
+      }
+    }
+
+    .grid-pulse {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(56, 189, 248, 0.2) 1.5px, transparent 1.5px),
+        linear-gradient(90deg, rgba(56, 189, 248, 0.2) 1.5px, transparent 1.5px);
+      background-size: 80px 80px;
+      mask-image: radial-gradient(circle at center, black, transparent 85%);
+      -webkit-mask-image: radial-gradient(circle at center, black, transparent 85%);
+      animation: grid-scale 8s infinite alternate ease-in-out;
+      opacity: 0.7;
+    }
+
+    /* 扫描线效果 */
+    .scan-line {
+      position: absolute;
+      width: 100%;
+      height: 100px;
+      background: linear-gradient(to bottom, transparent, rgba(56, 189, 248, 0.2), transparent);
+      z-index: 6;
+      animation: scan-move 4s infinite linear;
+      opacity: 0.5;
+    }
+
+    @keyframes scan-move {
+      0% {
+        transform: translateY(-100vh);
+      }
+
+      100% {
+        transform: translateY(100vh);
+      }
+    }
+
+    @keyframes grid-scale {
+      0% {
+        transform: scale(1);
+        opacity: 0.2;
+      }
+
+      100% {
+        transform: scale(1.1);
+        opacity: 0.5;
+      }
+    }
+
+    .title-pulse {
+      animation: title-glow 4s infinite alternate ease-in-out;
+    }
+
+    @keyframes title-glow {
+      0% {
+        filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0));
+      }
+
+      100% {
+        filter: drop-shadow(0 0 25px rgba(56, 189, 248, 0.5));
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="bg-dots"></div>
+  <div class="bg-gradient"></div>
+  <div class="progress-bar" id="progressBar"></div>
+  <div class="slide-info" id="slideInfo">01 / 09</div>
+
+  <div class="slide-container" id="slideContainer">
+    <!-- 封面 -->
+    <section class="slide cover active" data-id="0">
+      <div class="cover-bg-extra">
+        <div class="energy-orb"></div>
+        <div class="energy-orb"></div>
+        <div class="energy-orb"></div>
+        <div class="grid-pulse"></div>
+        <div class="scan-line"></div>
+      </div>
+      <div class="slide-content">
+        <h1 class="title-pulse">⚡AI Agent 一键打通内网⚡</h1>
+        <p>用“openclaw（clawbolt）方式”玩转 OpenWrt 内网穿透配置</p>
+        <div class="tag-container">
+          <span class="tag">#路由器</span>
+          <span class="tag">#AI自动化</span>
+          <span class="tag">#内网穿透</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 1 -->
+    <section class="slide" data-id="1">
+      <div class="slide-content">
+        <h2>什么是内网穿透？</h2>
+        <p>内网穿透的本质：</p>
+        <ul>
+          <li class="step">需要一台 <span class="highlight">具备公网 IP 的 VPS</span> 作为中转</li>
+          <li class="step">公网用户访问 <span class="highlight">VPS 的 IP:端口</span></li>
+          <li class="step">请求通过隧道转发到 <span class="highlight">内网设备</span></li>
+          <li class="step">常见场景：远程 SSH、NAS、Home Assistant、私有服务</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Slide 2 -->
+    <section class="slide" data-id="2">
+      <div class="slide-content">
+        <h2>VPS 中转拓扑示意图</h2>
+        <pre>
+公网用户
+   │ 访问 VPS 公网 IP:端口
+   ▼
+┌───────────────────────────┐
+│           VPS             │
+│   <span class="highlight">frps （AI 配置） </span>    │
+└────────────▲──────────────┘
+             │  安全隧道
+             │
+┌────────────┴──────────────┐
+│      OpenWrt 路由器       │
+│      <span class="highlight">xfrpc (AI 配置)</span>      │
+└────────────▲──────────────┘
+             │
+             ▼
+┌───────────────────────────┐
+│         内网服务          │
+│      NAS / SSH / Web      │
+└───────────────────────────┘</pre>
+
+      </div>
+    </section>
+
+    <!-- Slide 3 -->
+    <section class="slide" data-id="3">
+      <div class="slide-content">
+        <h2>OpenWrt：典型的内网中枢</h2>
+        <ul>
+          <li class="step">OpenWrt 可控性极强，是理想的“流量网关”</li>
+          <li class="step">主流方案：<span class="highlight">开源xfrpc</span> (frp 的轻量化 C 实现)</li>
+          <li class="step">优势：低内存占用、高吞吐、极致稳定</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Slide 4 -->
+    <section class="slide" data-id="4">
+      <div class="slide-content">
+        <h2>传统配置的“痛点”</h2>
+        <ul>
+          <li class="step"><strong>参数繁杂</strong>：端口、协议、密钥、加密方式...</li>
+          <li class="step"><strong>交互生硬</strong>：编辑配置文件或复杂的 Web 表单</li>
+          <li class="step"><strong>容错率低</strong>：一个字母写错，隧道就起不来</li>
+          <li class="step"><strong>认知门槛</strong>：新手很难理解什么是反向代理</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Slide 5 -->
+    <section class="slide" data-id="5">
+      <div class="slide-content">
+        <h2>AI Agent：描述意图，而非过程</h2>
+        <p>核心逻辑的范式转移：</p>
+        <ul>
+          <li class="step">👉 人类：描述<span class="highlight">“我要干什么”</span>（我要穿透 80 端口）</li>
+          <li class="step">👉 AI Agent：执行<span class="highlight">“怎么去配”</span>（生成 JSON/INI 并校验）</li>
+        </ul>
+        <p class="step" style="font-style: italic;">“配置不再是工作，而是一次自然的对话。”</p>
+      </div>
+    </section>
+
+    <!-- Slide 6 -->
+    <section class="slide" data-id="6">
+      <div class="slide-content">
+        <h2>服务器端：Antigravity 配置</h2>
+        <ul>
+          <li class="step">使用 <span class="highlight">Antigravity Agent模式</span></li>
+          <li class="step">自动理解用户意图，生成服务端配置</li>
+          <li class="step">配置即声明 (Declarative Config)</li>
+          <li class="step">实际演示</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Slide 7 -->
+    <section class="slide" data-id="7">
+      <div class="slide-content">
+        <h2>路由器能用 Antigravity这样的 AI Agent 去配置吗？</h2>
+        <ul>
+          <li class="step">❌ <strong>不行</strong>：路由器本地资源：存储、算力、内存小</li>
+          <li class="step">💡 <strong>解决思路</strong>：<span class="highlight">“云端大脑 + 本地神经”</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Slide 8 -->
+    <section class="slide" data-id="8">
+      <div class="slide-content">
+        <h2>AWAS + apfree-wifidog 模式</h2>
+        <ul>
+          <li class="step"><strong>云端管控 (AWAS)</strong>：调用大模型api，负责“思考”</li>
+          <li class="step"><strong>执行通道 (apfree-wifidog)</strong>：基于mqtt&websocket提供稳定的管控链路</li>
+          <li class="step"><strong>目标实现</strong>：将“人话”转译并下发为 xfrpc 内网穿透配置</li>
+          <li class="step"><strong>结果</strong>：极致简单的交互 + 极致轻量的客户端</li>
+          <li class="step"><strong>实际演示</strong></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Slide 9 -->
+    <section class="slide" data-id="9">
+      <div class="slide-content" style="max-width: 1400px; width: 100%;">
+        <div style="display: flex; flex-direction: column; gap: 3rem;">
+
+          <!-- Summary Section -->
+          <div>
+            <h2 style="margin-bottom: 2rem;">🚀 总结与展望</h2>
+            <div style="display: flex; gap: 2rem;">
+              <div class="step"
+                style="flex: 1; background: rgba(34, 211, 238, 0.05); padding: 2rem; border-radius: 12px; border-left: 4px solid var(--accent);">
+                <p style="font-size: 2rem; margin: 0; color: var(--text-main);">AI Agent 让网络配置变得<span
+                    class="highlight">“触手可及”</span></p>
+              </div>
+              <div class="step"
+                style="flex: 1; background: rgba(167, 139, 250, 0.05); padding: 2rem; border-radius: 12px; border-left: 4px solid #a78bfa;">
+                <p style="font-size: 2rem; margin: 0; color: var(--text-main);">OpenWrt + AI Agent，开启自动化管控<span
+                    class="highlight">新时代</span></p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Roadmap Grid -->
+          <div>
+            <h3 class="step"
+              style="font-size: 2.4rem; color: var(--text-sub); margin-bottom: 2rem; display: flex; align-items: center; gap: 1rem;">
+              <span style="width: 30px; height: 2px; background: var(--accent);"></span> 技术演进蓝图
+            </h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+              <div class="step"
+                style="background: rgba(255, 255, 255, 0.02); padding: 1.8rem; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.05);">
+                <div style="color: var(--accent); font-weight: 800; font-size: 1.6rem; margin-bottom: 0.5rem;">01. 全配置
+                  Agent 化</div>
+                <p style="font-size: 1.4rem; margin: 0; color: var(--text-sub);">通过自然语言对话彻底消除技术门槛，配置即对话。</p>
+              </div>
+              <div class="step"
+                style="background: rgba(255, 255, 255, 0.02); padding: 1.8rem; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.05);">
+                <div style="color: var(--accent); font-weight: 800; font-size: 1.6rem; margin-bottom: 0.5rem;">02.
+                  智能排障闭环</div>
+                <p style="font-size: 1.4rem; margin: 0; color: var(--text-sub);">实时分析插件故障与连接异常，实现秒级自动修复。</p>
+              </div>
+              <div class="step"
+                style="background: rgba(255, 255, 255, 0.02); padding: 1.8rem; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.05);">
+                <div style="color: var(--accent); font-weight: 800; font-size: 1.6rem; margin-bottom: 0.5rem;">03. 长任务守护
+                  Agent</div>
+                <p style="font-size: 1.4rem; margin: 0; color: var(--text-sub);">自动守护关键服务与进程，确保系统 7x24h 稳定运行。</p>
+              </div>
+              <div class="step"
+                style="background: rgba(255, 255, 255, 0.02); padding: 1.8rem; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.05);">
+                <div style="color: var(--accent); font-weight: 800; font-size: 1.6rem; margin-bottom: 0.5rem;">04.
+                  网络安全守护</div>
+                <p style="font-size: 1.4rem; margin: 0; color: var(--text-sub);">基于流量行为分析的异常监测，动态加固防火墙。</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 10: Closing & QR -->
+    <section class="slide" data-id="10">
+      <div class="slide-content" style="text-align: center;">
+        <h2
+          style="font-size: 4rem; margin-bottom: 3rem; background: linear-gradient(135deg, #fff, var(--accent)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">
+          期待与您共建未来</h2>
+
+        <div class="step"
+          style="display: inline-flex; flex-direction: column; align-items: center; background: rgba(255, 255, 255, 0.03); padding: 3rem; border-radius: 24px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 20px 50px rgba(0,0,0,0.3);">
+          <img src="qq-group.jpg" alt="QQ Group"
+            style="width: 380px; height: 550px; object-fit: cover; border-radius: 16px; border: 4px solid var(--accent); box-shadow: 0 0 30px var(--accent-glow); margin-bottom: 2rem;">
+
+          <div style="max-width: 600px;">
+            <p style="font-size: 2rem; color: var(--text-main); margin-bottom: 1rem; font-weight: 600;">加入 AI Agent &
+              OpenWrt 技术交流群</p>
+            <p style="font-size: 1.4rem; color: var(--text-sub); line-height: 1.6;">如果你对该 AI Agent 管控 OpenWrt
+              系统感兴趣，可以加入群获取相关资料，并对该流程的优化给出意见。</p>
+          </div>
+        </div>
+
+        <p class="step"
+          style="margin-top: 4rem; font-size: 1.6rem; color: var(--accent); letter-spacing: 4px; font-weight: 800; text-transform: uppercase;">
+          THank You for Watching
+        </p>
+      </div>
+    </section>
+  </div>
+
+  <div class="controls">
+    <button class="control-btn" onclick="prev()">⇠ Previous</button>
+    <button class="control-btn" onclick="next()">Next ⇢</button>
+    <button class="control-btn" onclick="toggleFullscreen()">⛶ Fullscreen</button>
+  </div>
+
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    const progressBar = document.getElementById('progressBar');
+    const slideInfo = document.getElementById('slideInfo');
+    let currentSlide = 0;
+    let currentStep = -1;
+
+    function updateSlide() {
+      slides.forEach((s, i) => {
+        s.classList.remove('active', 'prev');
+        if (i === currentSlide) {
+          s.classList.add('active');
+          // Reset steps for current slide
+          const steps = s.querySelectorAll('.step');
+          steps.forEach((step, idx) => {
+            if (idx <= currentStep) {
+              step.classList.add('step-visible');
+            } else {
+              step.classList.remove('step-visible');
+            }
+          });
+        } else if (i < currentSlide) {
+          s.classList.add('prev');
+        }
+      });
+
+      // Update progress
+      const progress = ((currentSlide + 1) / slides.length) * 100;
+      progressBar.style.width = `${progress}%`;
+      slideInfo.innerText = `${String(currentSlide + 1).padStart(2, '0')} / ${String(slides.length).padStart(2, '0')}`;
+    }
+
+    function next() {
+      const steps = slides[currentSlide].querySelectorAll('.step');
+      if (currentStep < steps.length - 1) {
+        currentStep++;
+        updateSlide();
+      } else if (currentSlide < slides.length - 1) {
+        currentSlide++;
+        currentStep = -1; // Ready for first step of next slide OR -1 to show slide header first
+        updateSlide();
+      }
+    }
+
+    function prev() {
+      if (currentStep >= 0) {
+        currentStep--;
+        updateSlide();
+      } else if (currentSlide > 0) {
+        currentSlide--;
+        const prevSteps = slides[currentSlide].querySelectorAll('.step');
+        currentStep = prevSteps.length - 1;
+        updateSlide();
+      }
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') {
+        next();
+      }
+      if (e.key === 'ArrowLeft' || e.key === 'Backspace') {
+        prev();
+      }
+      if (e.key === 'f') {
+        toggleFullscreen();
+      }
+    });
+
+    // Handle touch
+    let touchStartX = 0;
+    document.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; });
+    document.addEventListener('touchend', e => {
+      const touchEndX = e.changedTouches[0].screenX;
+      if (touchStartX - touchEndX > 50) next();
+      if (touchEndX - touchStartX > 50) prev();
+    });
+
+    // Init
+    updateSlide();
+  </script>
+</body>
+
+</html>
