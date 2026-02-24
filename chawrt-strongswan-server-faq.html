@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Chawrt IPsec VPN - strongSwan 部署注意事项</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+:root {
+  --bili-pink:#fb7299;
+  --bili-blue:#00a1d6;
+  --bg:#0a1020;
+  --panel:#121a2b;
+  --text:#e9f2ff;
+  --sub:#8ea3c0;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background: radial-gradient(circle at 12% 10%, #162745 0%, #0f1b33 35%, #0a1020 100%);
+  color: var(--text);
+  overflow: hidden;
+}
+
+.slide {
+  display: none;
+  width: 100vw;
+  height: 100vh;
+  padding: 38px 40px 120px;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.slide.active {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: fade 0.3s ease;
+}
+
+@keyframes fade {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.container {
+  width: min(1500px, 92vw);
+  min-height: min(840px, calc(92vw * 9 / 16));
+  max-height: 86vh;
+  background: linear-gradient(155deg, #18233a 0%, #111a2d 100%);
+  border-radius: 28px;
+  box-shadow: 0 26px 60px rgba(0, 0, 0, 0.38);
+  border: 2px solid #2a3a58;
+  padding: 44px 54px;
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+}
+
+.container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 240px;
+  height: 240px;
+  background: radial-gradient(circle, rgba(251,114,153,0.2) 0%, rgba(251,114,153,0) 70%);
+  pointer-events: none;
+}
+
+.container::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 280px;
+  height: 180px;
+  background: radial-gradient(circle, rgba(0,161,214,0.2) 0%, rgba(0,161,214,0) 75%);
+  pointer-events: none;
+}
+
+.title-slide {
+  text-align: center;
+}
+
+h1 {
+  font-size: 52px;
+  font-weight: 700;
+  margin-bottom: 26px;
+  line-height: 1.25;
+}
+
+h2 {
+  font-size: 38px;
+  font-weight: 700;
+  margin: 0 0 24px;
+  color: #e6f0ff;
+  border-left: 8px solid var(--bili-blue);
+  padding-left: 14px;
+}
+
+p, li {
+  font-size: 27px;
+  line-height: 1.7;
+}
+
+ul {
+  padding-left: 34px;
+}
+
+.card {
+  background: var(--panel);
+  border: 2px solid #2b3f62;
+  padding: 30px 34px;
+  border-radius: 22px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+}
+
+code {
+  display: block;
+  background: #0a1428;
+  border: 1px solid #33507c;
+  padding: 14px 18px;
+  border-radius: 12px;
+  margin-top: 14px;
+  font-size: 23px;
+  color: #8fcaff;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.footer {
+  position: absolute;
+  bottom: 24px;
+  right: 30px;
+  font-size: 20px;
+  color: #8da4c5;
+  font-weight: 700;
+}
+
+.nav {
+  position: fixed;
+  bottom: 28px;
+  left: 40px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 20;
+}
+
+button {
+  background: linear-gradient(90deg, var(--bili-blue), #30c3ef);
+  color: #fff;
+  border: none;
+  padding: 12px 20px;
+  font-size: 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+button:hover { filter: brightness(0.95); }
+
+.record-btn {
+  background: linear-gradient(90deg, var(--bili-pink), #ff8db0);
+}
+
+.highlight { color: var(--bili-pink); font-weight:700; }
+
+svg text { fill: #1f3552; font-size: 22px; font-weight: 600; }
+
+.hud {
+  position: fixed;
+  right: 36px;
+  bottom: 30px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.page-indicator {
+  background: #15213a;
+  color: #dce9ff;
+  border: 1px solid #30466e;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.progress-track {
+  width: 220px;
+  height: 10px;
+  border-radius: 999px;
+  background: #253753;
+  overflow: hidden;
+}
+
+.progress-fill {
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--bili-pink), var(--bili-blue));
+  transition: width 0.2s ease;
+}
+
+.top-badge {
+  position: fixed;
+  top: 24px;
+  left: 34px;
+  z-index: 20;
+  background: linear-gradient(90deg, var(--bili-pink), #ffa8c2);
+  color: #fff;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.hint {
+  position: fixed;
+  top: 24px;
+  right: 34px;
+  z-index: 20;
+  color: #b3c6df;
+  font-size: 15px;
+  background: #15213a;
+  border: 1px solid #30466e;
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+
+.contact-card {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  margin-top: 18px;
+}
+.qr {
+  width: 140px;
+  height: 140px;
+  min-width: 140px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border: 1px solid rgba(255,255,255,0.04);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.contact-info {
+  color: var(--sub);
+  font-size: 20px;
+}
+.contact-info b { color: var(--bili-pink); font-size: 22px; }
+
+body.recording .nav,
+body.recording .hint,
+body.recording .top-badge {
+  opacity: 0;
+  pointer-events: none;
+}
+
+body.recording {
+  cursor: none;
+}
+
+@media (max-width: 1200px) {
+  .container { padding: 34px 36px; }
+  h1 { font-size: 42px; }
+  h2 { font-size: 30px; }
+  p, li { font-size: 22px; }
+  code { font-size: 18px; }
+}
+
+</style>
+</head>
+<body>
+
+<div class="top-badge">B站风格 · 技术讲解页</div>
+<div class="hint">←/→ 翻页 ｜ R 切换录制模式</div>
+
+<!-- 封面 -->
+<div class="slide active">
+  <div class="container title-slide">
+    <h1>基于 Chawrt 的 IPsec VPN 部署时<br>strongSwan 服务端注意事项</h1>
+    <p>IKEv2 + XFRM + 地址池（Route-Based VPN）</p>
+  </div>
+  <div class="footer">01</div>
+</div>
+
+<!-- 架构选择 -->
+<div class="slide">
+  <div class="container">
+    <h2>架构选择：使用 swanctl 模式</h2>
+    <div class="card">
+      <ul>
+        <li>避免使用旧版 starter（ipsec.conf）</li>
+        <li>推荐：swanctl + charon-systemd</li>
+      </ul>
+      <code>dpkg -l | grep strongswan</code>
+    </div>
+  </div>
+  <div class="footer">02</div>
+</div>
+
+<!-- 删除旧版 -->
+<div class="slide">
+  <div class="container">
+    <h2>删除旧版 strongswan-starter</h2>
+    <div class="card">
+	  <code>systemctl status strongswan-starter</code>
+      <code>apt remove strongswan-starter</code>
+    </div>
+  </div>
+  <div class="footer">03</div>
+</div>
+
+<!-- 安装 -->
+<div class="slide">
+  <div class="container">
+    <h2>安装 modern 架构组件</h2>
+    <div class="card">
+      <code>apt install strongswan-swanctl charon-systemd</code>
+      <code>systemctl enable strongswan</code>
+      <code>systemctl start strongswan</code>
+      <code>systemctl status strongswan</code>
+    </div>
+  </div>
+  <div class="footer">04</div>
+</div>
+
+<!-- xfrm 创建 -->
+<div class="slide">
+  <div class="container">
+    <h2>创建 XFRM 虚拟接口</h2>
+    <div class="card">
+      <code>ip link add xfrm301 type xfrm dev eth0 if_id 301</code>
+      <code>ip link set xfrm301 up</code>
+      <p><span class="highlight">未创建接口时：</span> SA 建立成功但流量不通</p>
+    </div>
+  </div>
+  <div class="footer">05</div>
+</div>
+
+<!-- 地址池 -->
+<div class="slide">
+  <div class="container">
+    <h2>地址池模式必须配置接口 IP</h2>
+    <div class="card">
+      <p>地址池示例：</p>
+      <code>addrs = 10.3.0.2-10.3.0.100</code>
+      <p>服务器必须拥有网关地址：</p>
+      <code>ip addr add 10.3.0.1/24 dev xfrm301</code>
+    </div>
+  </div>
+  <div class="footer">06</div>
+</div>
+
+<!-- 转发 -->
+<div class="slide">
+  <div class="container">
+    <h2>开启转发与路由</h2>
+    <div class="card">
+      <code>sysctl -w net.ipv4.ip_forward=1</code>
+      <p>按业务需求将对应网段路由到隧道接口（不要使用 default）：</p>
+      <code>ip route add 10.10.0.0/16 dev xfrm301</code>
+      <code>ip route add 172.16.20.0/24 dev xfrm301</code>
+      <code>ip route add 192.168.88.0/24 dev xfrm301</code>
+    </div>
+  </div>
+  <div class="footer">07</div>
+</div>
+
+<!-- 拓扑 -->
+<div class="slide">
+  <div class="container">
+    <h2>异地组网拓扑示意图</h2>
+    <div class="card" style="text-align:center;">
+      <svg width="980" height="420">
+        <rect x="80" y="80" width="220" height="120" rx="14" fill="#7cc7ff" />
+        <text x="125" y="130">站点 A（总部）</text>
+        <text x="120" y="165">LAN: 10.10.0.0/16</text>
+
+        <rect x="80" y="240" width="220" height="120" rx="14" fill="#9ad8ff" />
+        <text x="125" y="290">站点 B（分部）</text>
+        <text x="110" y="325">LAN: 172.16.20.0/24</text>
+
+        <rect x="380" y="145" width="260" height="130" rx="16" fill="#66c3a2" />
+        <text x="430" y="190">VPN Hub（强Swan）</text>
+        <text x="425" y="225">xfrm301 / Route-Based</text>
+
+        <rect x="720" y="145" width="220" height="130" rx="14" fill="#ffb0c8" />
+        <text x="765" y="190">站点 C（异地）</text>
+        <text x="750" y="225">LAN: 192.168.88.0/24</text>
+
+        <line x1="300" y1="140" x2="380" y2="190" stroke="#1f3552" stroke-width="3" />
+        <line x1="300" y1="300" x2="380" y2="230" stroke="#1f3552" stroke-width="3" />
+        <line x1="640" y1="210" x2="720" y2="210" stroke="#1f3552" stroke-width="3" />
+
+        <text x="310" y="135">IPsec Tunnel</text>
+        <text x="305" y="300">IPsec Tunnel</text>
+        <text x="648" y="198">IPsec Tunnel</text>
+      </svg>
+    </div>
+  </div>
+  <div class="footer">08</div>
+</div>
+
+<!-- 总结 -->
+<div class="slide">
+  <div class="container">
+    <h2>总结</h2>
+    <div class="card">
+      <ul>
+        <li>使用 swanctl + charon-systemd</li>
+        <li>删除 strongswan-starter</li>
+        <li>创建并配置 XFRM 接口</li>
+        <li>地址池模式必须配置接口 IP</li>
+        <li>按站点网段将静态路由指向 xfrm301（不要 default）</li>
+      </ul>
+      <!-- 联系信息已移除（使用专页二维码页展示群信息） -->
+    </div>
+  </div>
+  <div class="footer">09</div>
+</div>
+
+<div class="nav">
+  <button onclick="prevSlide()">上一页</button>
+  <button onclick="nextSlide()">下一页</button>
+  <button class="record-btn" onclick="toggleRecording()" id="recordBtn">录制模式</button>
+</div>
+
+<!-- 专页：加入讨论群（二维码） -->
+<div class="slide">
+  <div class="container">
+    <h2>加入讨论群</h2>
+    <div class="card" style="text-align:center;">
+      <p style="font-size:22px; color:var(--sub);">扫码加入 QQ 群，与作者和大家讨论技术细节</p>
+      <div style="margin-top:18px; display:flex; justify-content:center;">
+        <img src="qq-group.jpg" alt="加入 QQ 群二维码" style="max-width:320px; width:48%; border-radius:12px; border:1px solid rgba(255,255,255,0.04);"/>
+      </div>
+      <p style="margin-top:16px; color:var(--sub);">欢迎大家扫码加入讨论群，或直接添加 QQ <b style="color:var(--bili-pink);">12345678</b> 联系我邀请入群。</p>
+    </div>
+  </div>
+  <div class="footer">10</div>
+</div>
+
+<div class="hud">
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="page-indicator" id="pageIndicator">01 / 09</div>
+</div>
+
+<script>
+let current = 0;
+const slides = document.querySelectorAll('.slide');
+const pageIndicator = document.getElementById('pageIndicator');
+const progressFill = document.getElementById('progressFill');
+const recordBtn = document.getElementById('recordBtn');
+
+function updateHud() {
+  const index = String(current + 1).padStart(2, '0');
+  const total = String(slides.length).padStart(2, '0');
+  pageIndicator.textContent = `${index} / ${total}`;
+  progressFill.style.width = `${((current + 1) / slides.length) * 100}%`;
+}
+
+function showSlide(index){
+  slides[current].classList.remove('active');
+  current = (index + slides.length) % slides.length;
+  slides[current].classList.add('active');
+  updateHud();
+}
+function nextSlide(){ showSlide(current + 1); }
+function prevSlide(){ showSlide(current - 1); }
+
+function toggleRecording(){
+  document.body.classList.toggle('recording');
+  const recording = document.body.classList.contains('recording');
+  recordBtn.textContent = recording ? '退出录制' : '录制模式';
+}
+
+document.addEventListener('keydown', function(e){
+  if(e.key === 'ArrowRight') nextSlide();
+  if(e.key === 'ArrowLeft') prevSlide();
+  if(e.key === 'r' || e.key === 'R') toggleRecording();
+});
+
+updateHud();
+</script>
+
+</body>
+</html>
