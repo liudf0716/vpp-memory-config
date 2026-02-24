@@ -3,1187 +3,509 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>MQTT 与 apfree-wifidog 远程管控</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MQTT 与 apfree-wifidog 远程管控实战 - staylight</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Outfit:wght@700;900&family=JetBrains+Mono&display=swap"
+    rel="stylesheet">
   <style>
     :root {
-      --primary-gradient: linear-gradient(90deg, #4facfe, #00f2fe);
-      --text-gradient: linear-gradient(90deg, #00eaff, #4facfe, #a855f7);
-      --bg-dark: #0b0f1a;
-      --glass-bg: rgba(255, 255, 255, 0.08);
-      --glass-border: rgba(255, 255, 255, 0.1);
-      --shadow-glow: 0 0 80px rgba(0, 180, 255, 0.25);
-      --font-main: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      --bg-deep: #020617;
+      --bg-panel: rgba(15, 23, 42, 0.7);
+      --accent: #22d3ee;
+      --accent-secondary: #a855f7;
+      --accent-glow: rgba(34, 211, 238, 0.2);
+      --text-main: #f8fafc;
+      --text-sub: #94a3b8;
+      --slide-transition: 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+
+      --qos0: #a855f7;
+      --qos1: #f59e0b;
+      --qos2: #ef4444;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      outline: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    html,
     body {
-      width: 100%;
-      height: 100%;
-      font-family: var(--font-main);
-      background: var(--bg-dark);
-      color: #ffffff;
+      margin: 0;
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background-color: var(--bg-deep);
+      color: var(--text-main);
       overflow: hidden;
-      /* 禁止选择文本，更像PPT */
-      user-select: none;
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* 动态背景 */
-    .bg-layer {
-      position: absolute;
+    /* 背景装饰 */
+    .bg-grid {
+      position: fixed;
       inset: 0;
-      background: radial-gradient(circle at 20% 30%, #1b3c88, transparent 40%),
-        radial-gradient(circle at 80% 70%, #0aa6b7, transparent 40%),
-        linear-gradient(135deg, #050816, #0b0f1a);
-      z-index: 0;
-      animation: hueFlow 20s ease-in-out infinite alternate;
+      background-image:
+        linear-gradient(rgba(34, 211, 238, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34, 211, 238, 0.05) 1px, transparent 1px);
+      background-size: 50px 50px;
+      z-index: -1;
     }
 
-    @keyframes hueFlow {
-      0% {
-        filter: hue-rotate(0deg);
-      }
-
-      100% {
-        filter: hue-rotate(30deg);
-      }
+    .bg-glow {
+      position: fixed;
+      width: 60vw;
+      height: 60vh;
+      background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+      filter: blur(100px);
+      z-index: -1;
+      border-radius: 50%;
     }
 
-    /* 幻灯片容器 */
+    .slide-container {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+
     .slide {
       position: absolute;
       inset: 0;
       display: flex;
-      align-items: center;
+      flex-direction: column;
       justify-content: center;
+      padding: 0 8%;
       opacity: 0;
       visibility: hidden;
-      transform: scale(1.05);
-      transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
-        transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-      z-index: 1;
-      padding: 20px;
+      transform: translateY(30px) scale(0.98);
+      transition: all var(--slide-transition);
     }
 
     .slide.active {
       opacity: 1;
       visibility: visible;
-      transform: scale(1);
-      z-index: 2;
+      transform: translateY(0) scale(1);
     }
 
-    /* 内容卡片 (玻璃拟态) */
-    .card {
-      position: relative;
-      width: 100%;
-      max-width: 1280px;
-      /* 使用 min-height 适应内容，但限制最大高度防止溢出 */
-      max-height: 90vh;
-      padding: clamp(30px, 5vw, 64px);
-      border-radius: 24px;
-      background: var(--glass-bg);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid var(--glass-border);
-      box-shadow: var(--shadow-glow);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
+    .slide.prev {
+      transform: translateY(-30px) scale(0.98);
+      opacity: 0;
     }
 
-    /* 布局 */
-    .grid-split {
-      display: grid;
-      grid-template-columns: 0.8fr 1.2fr;
-      gap: clamp(30px, 5vw, 60px);
-      align-items: center;
-    }
-
-    .cover-split {
-      grid-template-columns: 1fr 1fr;
-    }
-
-    /* 文字排版 */
-    .title {
-      font-size: clamp(32px, 4vw, 56px);
-      font-weight: 800;
-      margin-bottom: 20px;
-      background: var(--primary-gradient);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      line-height: 1.2;
-    }
-
-    .hero-title {
-      font-size: clamp(40px, 5vw, 72px);
+    h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 4.8rem;
       font-weight: 900;
       line-height: 1.1;
-      background: var(--text-gradient);
+      margin-bottom: 2rem;
+      background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
       -webkit-background-clip: text;
+      background-clip: text;
       -webkit-text-fill-color: transparent;
-      margin-bottom: 16px;
+      letter-spacing: -0.02em;
     }
 
-    .subtitle {
-      font-size: clamp(20px, 2.5vw, 32px);
-      font-weight: 600;
-      opacity: 0.9;
-      margin-bottom: 24px;
-    }
-
-    .text-body {
-      font-size: clamp(18px, 2vw, 28px);
-      line-height: 1.8;
-      opacity: 0.9;
-      color: #e0e6ed;
-    }
-
-    .list {
-      margin: 0;
-      padding-left: 1.2em;
-    }
-
-    .list li {
-      margin-bottom: 16px;
-      padding-left: 8px;
-    }
-
-    .list li::marker {
-      color: #4facfe;
-      font-weight: bold;
-    }
-
-    /* 标签组 */
-    .tags {
+    h2 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 3.2rem;
+      font-weight: 700;
+      margin-bottom: 2rem;
+      color: var(--accent);
       display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-top: 10px;
+      align-items: center;
+      gap: 1.2rem;
     }
 
-    .tag {
-      padding: 8px 16px;
-      border-radius: 50px;
-      font-size: clamp(14px, 1.5vw, 18px);
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(5px);
+    h2::before {
+      content: '';
+      width: 10px;
+      height: 1em;
+      background: linear-gradient(to bottom, var(--accent), var(--accent-secondary));
+      border-radius: 5px;
+      box-shadow: 0 0 15px var(--accent-glow);
     }
 
-    /* 进场动画 */
-    .animate-box .anim-item {
+    p {
+      font-size: 1.8rem;
+      line-height: 1.6;
+      color: var(--text-sub);
+      margin-bottom: 1.2rem;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin-top: 1rem;
+    }
+
+    li {
+      font-size: 1.6rem;
+      line-height: 1.4;
+      margin-bottom: 1.2rem;
+      padding: 1rem 1.5rem;
+      background: rgba(255, 255, 255, 0.03);
+      border-left: 4px solid transparent;
+      border-radius: 0 10px 10px 0;
       opacity: 0;
-      transform: translateY(20px);
-      transition: opacity 0.5s ease, transform 0.5s ease;
+      transform: translateX(-20px);
+      transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
-    .slide.active .anim-item {
+    li.step-visible {
       opacity: 1;
-      transform: translateY(0);
+      transform: translateX(0);
+      background: rgba(34, 211, 238, 0.05);
+      border-left-color: var(--accent);
     }
 
-    .delay-1 {
-      transition-delay: 0.1s;
+    .highlight {
+      color: var(--accent);
+      font-weight: 600;
     }
 
-    .delay-2 {
-      transition-delay: 0.2s;
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      color: var(--accent);
     }
 
-    .delay-3 {
-      transition-delay: 0.3s;
-    }
-
-    .delay-4 {
-      transition-delay: 0.4s;
-    }
-
-    @keyframes dashFlow {
-      to {
-        stroke-dashoffset: -20;
-      }
+    pre {
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(10px);
+      padding: 1.5rem;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.2rem;
     }
 
     /* 进度条 */
-    .progress-container {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 300px;
-      height: 6px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 3px;
-      overflow: hidden;
-      z-index: 10;
-    }
-
     .progress-bar {
-      height: 100%;
-      width: 0%;
-      background: var(--primary-gradient);
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      height: 4px;
+      background: var(--accent);
+      box-shadow: 0 0 15px var(--accent);
+      z-index: 100;
       transition: width 0.3s ease;
     }
 
-    /* 全屏按钮 */
-    .fullscreen-btn {
+    .slide-info {
       position: fixed;
-      top: 20px;
-      right: 20px;
-      width: 40px;
-      height: 40px;
+      bottom: 2rem;
+      right: 3rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.4rem;
+      color: var(--text-sub);
+      background: var(--bg-panel);
+      padding: 0.5rem 1.2rem;
       border-radius: 8px;
-      background: rgba(255, 255, 255, 0.1);
-      cursor: pointer;
+    }
+
+    .controls {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
       display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 20;
-      border: none;
-      color: #fff;
-      transition: 0.2s;
-    }
-
-    .fullscreen-btn:hover {
-      background: rgba(255, 255, 255, 0.2);
-    }
-
-    /* 新增 TCP 协议栈样式 */
-    /* 新增 TCP 协议栈样式 */
-    .header-area {
-      margin-bottom: 30px;
-      text-align: center;
-      width: 100%;
-    }
-
-    .content-area {
-      flex: 1;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      width: 100%;
-    }
-
-    .stack-container {
-      display: flex;
-      gap: 60px;
-      align-items: center;
-    }
-
-    .stack-box {
-      width: 260px;
-      padding: 18px;
-      border-radius: 12px;
-      text-align: center;
-      font-weight: bold;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-      position: relative;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      gap: 1rem;
+      background: var(--bg-panel);
       backdrop-filter: blur(10px);
-    }
-
-    .stack-box:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
-    }
-
-    .layer-mqtt {
-      background: linear-gradient(135deg, rgba(79, 172, 254, 0.9), rgba(0, 242, 254, 0.9));
-      color: #fff;
-      z-index: 3;
-    }
-
-    .layer-tcp {
-      background: rgba(168, 85, 247, 0.15);
-      border-color: rgba(168, 85, 247, 0.3);
-      color: #d8b4fe;
-      z-index: 2;
-    }
-
-    .layer-ip {
-      background: rgba(255, 255, 255, 0.05);
-      color: #94a3b8;
-      z-index: 1;
-    }
-
-    .flow-arrow {
-      text-align: center;
-      color: rgba(255, 255, 255, 0.5);
-      font-size: 24px;
-      margin: 8px 0;
-      animation: bounceArrow 2s infinite;
-    }
-
-    @keyframes bounceArrow {
-
-      0%,
-      100% {
-        transform: translateY(0);
-        opacity: 0.5;
-      }
-
-      50% {
-        transform: translateY(5px);
-        opacity: 0.8;
-      }
-    }
-
-    .layer-badge {
-      display: inline-block;
-      font-size: 10px;
-      background: rgba(168, 85, 247, 0.3);
-      color: #fff;
-      padding: 2px 8px;
-      border-radius: 10px;
-      margin-top: 5px;
-      border: 1px solid rgba(168, 85, 247, 0.4);
-    }
-
-    .tcp-features {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      max-width: 480px;
-    }
-
-    .feature-item {
-      background: rgba(255, 255, 255, 0.03);
-      padding: 16px 20px;
-      border-radius: 16px;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      display: flex;
-      gap: 16px;
-      align-items: flex-start;
-      transition: 0.3s;
-    }
-
-    .feature-item:hover {
-      background: rgba(255, 255, 255, 0.08);
-      border-color: rgba(79, 172, 254, 0.3);
-      transform: translateX(5px);
-    }
-
-    .feature-icon {
-      flex-shrink: 0;
-      width: 40px;
-      height: 40px;
-      background: linear-gradient(135deg, rgba(79, 172, 254, 0.2), rgba(0, 242, 254, 0.1));
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #4facfe;
-    }
-
-    .icon-svg {
-      width: 24px;
-      height: 24px;
-    }
-
-    .feature-title {
-      color: #fff;
-      font-size: 18px;
-      margin-bottom: 4px;
-      font-weight: 600;
-    }
-
-    .feature-desc {
-      font-size: 14px;
-      opacity: 0.7;
-      line-height: 1.5;
-      color: #e2e8f0;
-    }
-
-    .feature-desc b {
-      color: #4facfe;
-    }
-
-    /* QoS 场景样式 */
-    :root {
-      --qos0-color: #a855f7;
-      --qos1-color: #f59e0b;
-      --qos2-color: #ef4444;
-    }
-
-    .qos-container {
-      display: flex;
-      gap: 30px;
-      width: 100%;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-
-    .qos-box {
-      flex: 1;
-      min-width: 380px;
-      max-width: 450px;
-      background: rgba(255, 255, 255, 0.03);
+      padding: 0.8rem 1.5rem;
+      border-radius: 99px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 1000;
       border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 16px;
-      padding: 15px;
+    }
+
+    body:hover .controls {
+      opacity: 1;
+    }
+
+    .control-btn {
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+      padding: 0.5rem 1rem;
+      font-size: 1.1rem;
+      border-radius: 99px;
+      transition: background 0.2s;
+    }
+
+    .control-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    /* SVG 容器 */
+    .svg-container {
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      transition: transform 0.3s ease;
-    }
-
-    .qos-box:hover {
-      transform: translateY(-5px);
-      background: rgba(255, 255, 255, 0.06);
-      border-color: rgba(255, 255, 255, 0.2);
-    }
-
-    .qos-label {
-      font-size: 16px;
-      font-weight: bold;
-      margin-bottom: 10px;
-      color: #fff;
-      opacity: 0.9;
+      justify-content: center;
+      margin: 1rem 0;
       background: rgba(0, 0, 0, 0.2);
-      padding: 5px 15px;
-      border-radius: 20px;
+      border-radius: 16px;
+      padding: 20px;
     }
 
-    .actor-text {
-      font-size: 12px;
-      fill: #fff;
-      font-weight: bold;
+    .step-reveal {
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.5s ease;
     }
 
-    .flow-line {
-      stroke-dasharray: 5;
-      animation: dashFlow 1s linear infinite;
-    }
-
-    .flow-line-back {
-      stroke-dasharray: 5;
-      animation: dashFlowBack 1s linear infinite;
-    }
-
-    @keyframes dashFlowBack {
-      to {
-        stroke-dashoffset: 20;
-        /* 反向流动 */
-      }
-    }
-
-    /* 响应式调整 */
-    @media (max-width: 900px) {
-
-      .grid-split,
-      .cover-split {
-        grid-template-columns: 1fr;
-        text-align: center;
-        gap: 30px;
-      }
-
-      .list {
-        display: inline-block;
-        text-align: left;
-      }
-
-      .tags {
-        justify-content: center;
-      }
-
-      .card {
-        padding: 30px 20px;
-      }
-
-      /* 手机上隐藏复杂的 SVG 或缩小它 */
-      .svg-container {
-        transform: scale(0.8);
-        margin: -20px 0;
-      }
+    .step-reveal.step-visible {
+      opacity: 1;
+      transform: translateY(0);
     }
   </style>
 </head>
 
 <body>
-
-  <div class="bg-layer"></div>
-  <button class="fullscreen-btn" title="切换全屏" onclick="toggleFullScreen()">⛶</button>
-  <div class="progress-container">
-    <div class="progress-bar"></div>
+  <div class="bg-grid"></div>
+  <div class="bg-glow" style="top: -10%; right: -10%;"></div>
+  <div class="bg-glow"
+    style="bottom: -10%; left: -10%; background: radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, transparent 70%);">
   </div>
 
-  <div class="slide active">
-    <div class="card">
-      <div class="grid-split cover-split animate-box">
-        <div style="display:flex; flex-direction:column; justify-content:center;">
-          <div class="hero-title anim-item delay-1">MQTT<br>远程管控实战</div>
-          <div class="subtitle anim-item delay-2">从协议设计到物联网工程落地</div>
-          <div class="tags anim-item delay-3" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;">
-            <span style="padding:10px 18px;border-radius:999px;background:rgba(0,234,255,0.15);font-size:18px;">MQTT
-              协议</span>
-            <span style="padding:10px 18px;border-radius:999px;background:rgba(79,172,254,0.15);font-size:18px;">QoS &
-              Topic 设计</span>
-            <span
-              style="padding:10px 18px;border-radius:999px;background:rgba(168,85,247,0.15);font-size:18px;">OpenWrt</span>
-            <span
-              style="padding:10px 18px;border-radius:999px;background:rgba(255,255,255,0.12);font-size:18px;">apfree-wifidog</span>
-          </div>
-          <div class="text-body anim-item delay-4" style="margin-top: 24px; font-size: 18px; opacity: 0.7;">
-            一个用于生产环境的高并发、低延迟<br>远程管控案例深度解析
-          </div>
-        </div>
+  <div class="progress-bar" id="progressBar"></div>
+  <div class="slide-info" id="slideInfo">01 / 12</div>
 
-        <div class="svg-container anim-item delay-2" style="display:flex;justify-content:center;">
-          <svg width="600" height="500" viewBox="0 0 600 500" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="300" cy="100" r="80" fill="#4facfe" opacity="0.2" />
-            <circle cx="300" cy="100" r="70" stroke="#4facfe" stroke-width="3" />
-            <text x="300" y="105" text-anchor="middle" fill="#fff" font-size="22" font-weight="bold">Broker</text>
-
-            <rect x="50" y="80" width="120" height="70" rx="10" stroke="#22c55e" stroke-width="2"
-              fill="rgba(34,197,94,0.1)" />
-            <text x="110" y="120" text-anchor="middle" fill="#22c55e" font-size="22" font-weight="bold">Server</text>
-
-            <rect x="190" y="320" width="220" height="110" rx="10" stroke="#00f2fe" stroke-width="2"
-              fill="rgba(0,242,254,0.1)" />
-            <text x="300" y="355" text-anchor="middle" fill="#00f2fe" font-size="22" font-weight="bold">ChaWrt</text>
-
-            <rect x="240" y="370" width="120" height="30" rx="5" fill="#a855f7" opacity="0.8" />
-            <text x="300" y="390" text-anchor="middle" fill="#fff" font-size="20">apfree-wifidog</text>
-
-            <path d="M170 115 L230 100" stroke="#22c55e" stroke-width="2" stroke-dasharray="6" />
-
-            <circle cx="170" cy="115" r="4" fill="#22c55e">
-              <animate attributeName="cx" from="170" to="230" dur="2s" repeatCount="indefinite" />
-              <animate attributeName="cy" from="115" to="100" dur="2s" repeatCount="indefinite" />
-            </circle>
-
-            <path class="flow-line" d="M300 170 L300 320" stroke="#4facfe" stroke-width="3" />
-
-            <circle cx="300" cy="245" r="5" fill="#fff">
-              <animate attributeName="cy" from="170" to="320" dur="1.5s" repeatCount="indefinite" />
-            </circle>
-          </svg>
-        </div>
+  <div class="slide-container">
+    <!-- 封面 -->
+    <section class="slide active">
+      <h1>MQTT 远程管控实战课<br /><span style="font-size: 0.7em; opacity: 0.8;">从协议设计到 apfree-wifidog 工程落地</span></h1>
+      <p style="font-size: 2.22rem; color: var(--accent);">物联网高并发、低延迟远程控制方案深度解析</p>
+      <div style="margin-top: 3rem; display: flex; gap: 1rem;">
+        <span
+          style="background: rgba(34, 211, 238, 0.1); padding: 0.5rem 1.2rem; border-radius: 99px; border: 1px solid var(--accent);">MQTT
+          5.0</span>
+        <span
+          style="background: rgba(168, 85, 247, 0.1); padding: 0.5rem 1.2rem; border-radius: 99px; border: 1px solid var(--accent-secondary);">OpenWrt</span>
+        <span
+          style="background: rgba(255, 255, 255, 0.05); padding: 0.5rem 1.2rem; border-radius: 99px; border: 1px solid rgba(255, 255, 255, 0.2);">Cloud
+          Management</span>
       </div>
-    </div>
+    </section>
+
+    <!-- Slide 1 -->
+    <section class="slide">
+      <h2>目录概览</h2>
+      <ul>
+        <li class="step"><strong>基础篇</strong>：MQTT 协议本质与 TCP 的灵魂协议</li>
+        <li class="step"><strong>原理篇</strong>：Pub/Sub 模型与 QoS 服务质量保证</li>
+        <li class="step"><strong>设计篇</strong>：如何构建生产级的 Topic 层级结构</li>
+        <li class="step"><strong>实战篇</strong>：apfree-wifidog 的 JSON 指令集设计</li>
+      </ul>
+    </section>
+
+    <!-- Slide 2 -->
+    <section class="slide">
+      <h2>MQTT 的底座：TCP 协议</h2>
+      <p>为什么理解这个是所有优化的前提？</p>
+      <div class="svg-container step-reveal step">
+        <svg width="600" height="200" viewBox="0 0 600 200">
+          <rect x="200" y="20" width="200" height="40" fill="var(--accent)" opacity="0.8" rx="5" />
+          <text x="300" y="45" text-anchor="middle" fill="white" font-weight="bold">MQTT (Application)</text>
+          <path d="M300 60 L300 85" stroke="var(--accent)" stroke-width="2" marker-end="url(#arrow)" />
+          <rect x="200" y="85" width="200" height="40" fill="var(--accent-secondary)" opacity="0.6" rx="5" />
+          <text x="300" y="110" text-anchor="middle" fill="white">TCP (Transport)</text>
+          <path d="M300 125 L300 150" stroke="white" stroke-width="2" opacity="0.3" />
+          <rect x="200" y="150" width="200" height="40" fill="rgba(255,255,255,0.05)" stroke="white" stroke-width="1"
+            rx="5" />
+          <text x="300" y="175" text-anchor="middle" fill="white" opacity="0.5">IP (Network)</text>
+        </svg>
+      </div>
+      <ul>
+        <li class="step"><strong>长连接</strong>：服务器可 <span class="highlight">主动推送</span>（踢人、更新重启）</li>
+        <li class="step"><strong>有序性</strong>：指令严格按顺序送达，避免状态错位</li>
+        <li class="step"><strong>可靠性</strong>：底层丢失自动重传，应用层无感</li>
+      </ul>
+    </section>
+
+    <!-- Slide 3 -->
+    <section class="slide">
+      <h2>Pub/Sub 解耦模型</h2>
+      <p>Broker 代理是通信的枢纽：</p>
+      <ul>
+        <li class="step"><strong>Publisher</strong>：发布消息，不关心谁接收</li>
+        <li class="step"><strong>Subscriber</strong>：订阅感兴趣的 Topic</li>
+        <li class="step"><strong>Broker</strong>：消息路由器，实现设备间的 <span class="highlight">完全解耦</span></li>
+      </ul>
+    </section>
+
+    <!-- Slide 4 -->
+    <section class="slide">
+      <h2>QoS 0: At most once</h2>
+      <p style="color: var(--qos0);">"发后即忘" —— 追求极致性能</p>
+      <div class="svg-container step-reveal step">
+        <svg width="500" height="150" viewBox="0 0 500 150">
+          <text x="50" y="40" fill="white">Pub</text>
+          <line x1="100" y1="80" x2="400" y2="80" stroke="var(--qos0)" stroke-width="4" marker-end="url(#arrow)" />
+          <text x="250" y="70" text-anchor="middle" fill="var(--qos0)">PUBLISH</text>
+          <text x="450" y="40" fill="white">Sub</text>
+        </svg>
+      </div>
+      <ul>
+        <li class="step">没有确认机制，网络抖动可能丢包</li>
+        <li class="step">适用场景：每秒多次的 <span class="highlight">实时传感器数据</span>、非关键心跳</li>
+      </ul>
+    </section>
+
+    <!-- Slide 5 -->
+    <section class="slide">
+      <h2>QoS 1: At least once</h2>
+      <p style="color: var(--qos1);">"必须送达" —— 生产环境最常用</p>
+      <div class="svg-container step-reveal step">
+        <svg width="500" height="150" viewBox="0 0 500 150">
+          <path d="M100 60 L400 60" stroke="var(--qos1)" stroke-width="3" marker-end="url(#arrow)" />
+          <text x="250" y="50" text-anchor="middle" fill="var(--qos1)">PUBLISH (ID=1)</text>
+          <path d="M400 100 L100 100" stroke="#22c55e" stroke-width="3" marker-end="url(#arrow)" />
+          <text x="250" y="125" text-anchor="middle" fill="#22c55e">PUBACK (ID=1)</text>
+        </svg>
+      </div>
+      <ul>
+        <li class="step">保证一定收到，但可能因为 ACK 丢失导致 <span class="highlight">重复指令</span></li>
+        <li class="step">应用层要求：必须实现 <span class="highlight">幂等性设计</span>（如带 UUID 的指令）</li>
+      </ul>
+    </section>
+
+    <!-- Slide 6 -->
+    <section class="slide">
+      <h2>QoS 2: Exactly once</h2>
+      <p style="color: var(--qos2);">"只有一次" —— 四次握手，昂贵但优雅</p>
+      <ul>
+        <li class="step">解决重复消息问题，适用于计费、开关控制等 <span class="highlight">金融级</span> 场景</li>
+        <li class="step">开销分析：网络往返次数多，高并发下需谨慎使用</li>
+      </ul>
+    </section>
+
+    <!-- Slide 7 -->
+    <section class="slide">
+      <h2>Topic 层级设计原则</h2>
+      <p>Topic 是 MQTT 系统的“目录树”：</p>
+      <pre>wifidogx / {version} / {device_id} / {direction} / {business}</pre>
+      <ul>
+        <li class="step"><strong>区分方向</strong>：<code>s2c</code> (控制) vs <code>c2s</code> (状态/请求)</li>
+        <li class="step"><strong>包含 ID</strong>：使每一台设备只订阅自己的私有频道</li>
+        <li class="step"><strong>精简根路径</strong>：减少通配符扫描带来的 Broker 压力</li>
+      </ul>
+    </section>
+
+    <!-- Slide 8 -->
+    <section class="slide">
+      <h2>apfree-wifidog 业务实战</h2>
+      <p>典型的远程踢人、配置下发逻辑：</p>
+      <ul>
+        <li class="step">设备订阅：<code>.../s2c/control</code></li>
+        <li class="step">JSON Payload 结构：
+          <pre style="font-size: 1rem;">
+{
+  "op": "kick",
+  "mac": "00:aa:bb:cc:dd:ee",
+  "msg_id": "uuid-123"
+}</pre>
+        </li>
+        <li class="step">设备回执：异步发布 <code>.../c2s/response</code>，包含 <code>err_code</code></li>
+      </ul>
+    </section>
+
+    <!-- Slide 9 -->
+    <section class="slide">
+      <h2>总结：提升管控成功率的 3 个关键</h2>
+      <ul>
+        <li class="step"><strong>1. 心跳超时优化</strong>：根据网络环境动态调整 Keep-Alive</li>
+        <li class="step"><strong>2. 遗嘱消息 (Will)</strong>：第一时间捕获设备“异常掉线”状态</li>
+        <li class="step"><strong>3. 业务幂等</strong>：QoS 1 配合 msg_id 过滤重复指令</li>
+      </ul>
+    </section>
+
+    <!-- Slide 10 -->
+    <section class="slide">
+      <h2 style="font-size: 4rem;">加入技术探讨</h2>
+      <p>关注 ChaWrt / apfree-wifidog 开源项目，共同探讨物联网实战。</p>
+      <div style="display: flex; justify-content: center; margin-top: 2rem;">
+        <img src="qq-group.jpg" alt="QQ Group"
+          style="width: 300px; border: 4px solid var(--accent); border-radius: 20px; box-shadow: 0 0 30px var(--accent-glow);">
+      </div>
+      <p class="step" style="text-align: center; margin-top: 2rem; color: var(--accent); font-weight: 800;">
+        感谢观看，欢迎在评论区交流！
+      </p>
+    </section>
   </div>
 
-  <div class="slide">
-    <div class="card">
-      <div class="grid-split animate-box">
-        <div>
-          <div class="title anim-item delay-1">目录概览</div>
-          <div class="subtitle anim-item delay-2">我们将讨论什么？</div>
-        </div>
-        <div class="text-body anim-item delay-3">
-          <ul class="list">
-            <li><strong>基础：</strong> MQTT 基于 TCP 协议的特性</li>
-            <li><strong>背景：</strong> 传统 HTTP 轮询在 IoT 场景的痛点</li>
-            <li><strong>协议：</strong> MQTT 核心机制 (Pub/Sub, QoS)</li>
-            <li><strong>设计：</strong> 如何设计 Topic 与 Payload</li>
-            <li><strong>实战：</strong> OpenWrt 上 apfree-wifidog 的集成方案</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="slide">
-    <div class="card">
-      <div class="header-area animate-box">
-        <div class="title anim-item delay-1">MQTT 是基于 TCP 的协议</div>
-        <div class="subtitle anim-item delay-2">为什么这是最重要的基础？</div>
-      </div>
-      <div class="content-area animate-box">
-        <div class="stack-container">
-          <div class="anim-item delay-3">
-            <div class="stack-box layer-mqtt">
-              <span style="font-size:24px">MQTT</span>
-              <span style="font-size:14px; opacity:0.8; display:block">Application Layer</span>
-            </div>
-            <div class="flow-arrow">↓</div>
-            <div class="stack-box layer-tcp">
-              <span style="font-size:24px">TCP</span>
-              <span style="font-size:14px; opacity:0.8; display:block">Transport Layer</span>
-              <div class="layer-badge">Reliable</div>
-            </div>
-            <div class="flow-arrow">↓</div>
-            <div class="stack-box layer-ip">
-              <span style="font-size:24px">IP</span>
-              <span style="font-size:14px; opacity:0.8; display:block">Network Layer</span>
-            </div>
-          </div>
-
-          <div class="tcp-features">
-            <!-- Feature 1 -->
-            <div class="feature-item anim-item delay-4">
-              <div class="feature-icon">
-                <svg viewBox="0 0 24 24" fill="none" class="icon-svg">
-                  <path d="M12 2v20M2 12h20" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                </svg>
-              </div>
-              <div>
-                <h3 class="feature-title">长连接 (Keep-Alive)</h3>
-                <p class="feature-desc">
-                  通道始终保持打开，服务器可随时<b>主动推送</b>（如踢人指令）。彻底告别 HTTP 轮询的高延迟。
-                </p>
-              </div>
-            </div>
-
-            <!-- Feature 2 -->
-            <div class="feature-item anim-item delay-5">
-              <div class="feature-icon">
-                <svg viewBox="0 0 24 24" fill="none" class="icon-svg">
-                  <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                </svg>
-              </div>
-              <div>
-                <h3 class="feature-title">有序性保证</h3>
-                <p class="feature-desc">
-                  指令按<b>发送顺序</b>到达。确保“先配置，后重启”的逻辑严格执行，不会出现时序混乱。
-                </p>
-              </div>
-            </div>
-
-            <!-- Feature 3 -->
-            <div class="feature-item anim-item delay-6">
-              <div class="feature-icon">
-                <svg viewBox="0 0 24 24" fill="none" class="icon-svg">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-              </div>
-              <div>
-                <h3 class="feature-title">可靠性基石</h3>
-                <p class="feature-desc">
-                  QoS 机制建立在 TCP 的 <b>ACK 确认</b>之上。底层丢包自动重传，上层业务无感。
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="slide">
-    <div class="card">
-      <div class="grid-split animate-box">
-        <div>
-          <div class="title anim-item delay-1">为什么需要 MQTT</div>
-          <div class="subtitle anim-item delay-2">HTTP vs MQTT</div>
-        </div>
-        <div class="text-body anim-item delay-3">
-          <div style="background:rgba(255,255,255,0.05); padding:20px; border-radius:10px; margin-bottom:20px;">
-            <strong style="color:#ff6b6b">HTTP (传统)</strong><br>
-            请求-响应模式。服务端无法主动“推”消息给设备。轮询会导致高延迟和大量无效流量。
-          </div>
-          <div
-            style="background:rgba(79,172,254,0.1); padding:20px; border-radius:10px; border:1px solid rgba(79,172,254,0.3)">
-            <strong style="color:#4facfe">MQTT (现代)</strong><br>
-            基于 TCP 长连接。轻量级报头（最小2字节）。服务端可随时下发指令，毫秒级响应。
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="slide">
-    <div class="card">
-      <div class="grid-split animate-box">
-        <div>
-          <div class="title anim-item delay-1">协议核心角色</div>
-          <div class="subtitle anim-item delay-2">解耦的通信模型</div>
-        </div>
-        <div class="text-body anim-item delay-3">
-          <ul class="list">
-            <li>
-              <strong>Broker (代理)</strong><br>
-              <span style="font-size:0.8em;opacity:0.7">通信枢纽。负责接收所有消息，过滤并分发给订阅者。设备之间互不感知。</span>
-            </li>
-            <li style="margin-top:20px;">
-              <strong>Publisher (发布者)</strong><br>
-              <span style="font-size:0.8em;opacity:0.7">生产消息。例如：云端下发配置，或设备上报心跳。</span>
-            </li>
-            <li style="margin-top:20px;">
-              <strong>Subscriber (订阅者)</strong><br>
-              <span style="font-size:0.8em;opacity:0.7">消费消息。例如：apfree-wifidog 监听 `router/{mac}/control`。</span>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="slide">
-    <div class="card">
-      <div class="grid-split animate-box">
-        <div>
-          <div class="title anim-item delay-1">QoS 服务质量</div>
-          <div class="subtitle anim-item delay-2">在不可靠网络中保证可靠性</div>
-        </div>
-        <div class="text-body anim-item delay-3">
-          <div style="display:grid; gap:15px;">
-            <div style="display:flex; align-items:center;">
-              <span style="font-size:40px; font-weight:bold; color:rgba(255,255,255,0.3); margin-right:20px;">0</span>
-              <div>
-                <strong>At most once (最多一次)</strong><br>
-                <span style="font-size:0.8em">"发后即忘"。效率最高，但可能丢包。适用于心跳上报。</span>
-              </div>
-            </div>
-            <div style="display:flex; align-items:center;">
-              <span style="font-size:40px; font-weight:bold; color:#4facfe; margin-right:20px;">1</span>
-              <div>
-                <strong>At least once (至少一次)</strong><br>
-                <span style="font-size:0.8em">保证送达，但可能重复。工程中最常用（配合幂等处理）。</span>
-              </div>
-            </div>
-            <div style="display:flex; align-items:center;">
-              <span style="font-size:40px; font-weight:bold; color:rgba(255,255,255,0.3); margin-right:20px;">2</span>
-              <div>
-                <strong>Exactly once (只有一次)</strong><br>
-                <span style="font-size:0.8em">四次握手，开销极大。除非必须（如计费），否则慎用。</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="slide">
-    <div class="card">
-      <div class="header-area animate-box">
-        <div class="title anim-item delay-1" style="color:var(--qos0-color); -webkit-text-fill-color: initial;">QoS 0:
-          At most once
-          (最多一次)</div>
-        <div class="subtitle anim-item delay-2">"发后即忘" —— 就像收音机广播，不保证你听没听到。</div>
-      </div>
-      <div class="content-area animate-box">
-        <div class="qos-container">
-
-          <div class="qos-box anim-item delay-3">
-            <div class="qos-label">场景 A: 设备上报数据 (Publish)</div>
-            <svg width="400" height="300" viewBox="0 0 400 300">
-              <defs>
-                <marker id="arrow-g" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
-                  <path d="M0,0 L0,6 L9,3 z" fill="#22c55e" />
-                </marker>
-              </defs>
-              <rect x="50" y="20" width="80" height="30" rx="5" fill="#a855f7" />
-              <text x="90" y="40" text-anchor="middle" class="actor-text">设备 (Pub)</text>
-              <line x1="90" y1="50" x2="90" y2="280" stroke="#fff" stroke-width="2" opacity="0.3" />
-
-              <rect x="270" y="20" width="80" height="30" rx="5" fill="#4facfe" />
-              <text x="310" y="40" text-anchor="middle" class="actor-text">Broker</text>
-              <line x1="310" y1="50" x2="310" y2="280" stroke="#fff" stroke-width="2" opacity="0.3" />
-
-              <text x="200" y="100" text-anchor="middle" fill="#22c55e" font-size="14" font-weight="bold">PUBLISH (QoS
-                0)</text>
-              <path d="M90 120 L300 120" stroke="#22c55e" stroke-width="3" marker-end="url(#arrow-g)"
-                class="flow-line" />
-
-              <text x="200" y="160" text-anchor="middle" fill="#aaa" font-size="13">无 ACK 回复</text>
-              <text x="200" y="180" text-anchor="middle" fill="#aaa" font-size="13">发送完即删除本地消息</text>
-            </svg>
-          </div>
-
-          <div class="qos-box anim-item delay-4">
-            <div class="qos-label">场景 B: 平台下发指令 (Subscribe)</div>
-            <svg width="400" height="300" viewBox="0 0 400 300">
-              <defs>
-                <marker id="arrow-g" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
-                  <path d="M0,0 L0,6 L9,3 z" fill="#22c55e" />
-                </marker>
-              </defs>
-              <rect x="50" y="20" width="80" height="30" rx="5" fill="#4facfe" />
-              <text x="90" y="40" text-anchor="middle" class="actor-text">Broker</text>
-              <line x1="90" y1="50" x2="90" y2="280" stroke="#fff" stroke-width="2" opacity="0.3" />
-
-              <rect x="270" y="20" width="80" height="30" rx="5" fill="#a855f7" />
-              <text x="310" y="40" text-anchor="middle" class="actor-text">设备 (Sub)</text>
-              <line x1="310" y1="50" x2="310" y2="280" stroke="#fff" stroke-width="2" opacity="0.3" />
-
-              <text x="200" y="100" text-anchor="middle" fill="#22c55e" font-size="14" font-weight="bold">PUBLISH (QoS
-                0)</text>
-              <path d="M90 120 L300 120" stroke="#22c55e" stroke-width="3" marker-end="url(#arrow-g)"
-                class="flow-line" />
-
-              <text x="200" y="160" text-anchor="middle" fill="#aaa" font-size="13">Broker 转发后不保存</text>
-              <text x="200" y="180" text-anchor="middle" fill="#aaa" font-size="13">如果设备掉线，消息丢失</text>
-            </svg>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="slide">
-    <div class="card">
-      <div class="header-area">
-        <div class="title" style="color:var(--qos1-color); -webkit-text-fill-color: initial;">QoS 1: At least once
-          (至少一次)</div>
-        <div class="subtitle">"必须有回音" —— 确保收到，但如果回音丢了，可能会重发导致重复。</div>
-      </div>
-      <div class="content-area">
-        <div class="qos-container">
-
-          <div class="qos-box">
-            <div class="qos-label">场景 A: 设备上报 (Pub)</div>
-            <svg width="400" height="300" viewBox="0 0 400 300">
-              <defs>
-                <marker id="arrow-y" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
-                  <path d="M0,0 L0,6 L9,3 z" fill="#f59e0b" />
-                </marker>
-                <marker id="arrow-g" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
-                  <path d="M0,0 L0,6 L9,3 z" fill="#22c55e" />
-                </marker>
-              </defs>
-              <line x1="90" y1="50" x2="90" y2="280" stroke="#fff" stroke-width="2" opacity="0.3" />
-              <line x1="310" y1="50" x2="310" y2="280" stroke="#fff" stroke-width="2" opacity="0.3" />
-
-              <rect x="50" y="20" width="80" height="30" rx="5" fill="#a855f7" /><text x="90" y="40"
-                text-anchor="middle" class="actor-text">设备</text>
-              <rect x="270" y="20" width="80" height="30" rx="5" fill="#4facfe" /><text x="310" y="40"
-                text-anchor="middle" class="actor-text">Broker</text>
-
-              <text x="150" y="90" fill="#22c55e" font-size="12">1. PUBLISH (ID=10)</text>
-              <path d="M90 100 L300 100" stroke="#22c55e" stroke-width="2" marker-end="url(#arrow-g)"
-                class="flow-line" />
-
-              <text x="250" y="145" fill="#f59e0b" font-size="12" text-anchor="end">2. PUBACK (ID=10)</text>
-              <path d="M310 155 L100 155" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrow-y)"
-                class="flow-line-back" />
-
-              <text x="200" y="220" text-anchor="middle" fill="#ddd" font-size="13" style="font-style:italic">只有收到
-                PUBACK</text>
-              <text x="200" y="240" text-anchor="middle" fill="#ddd" font-size="13"
-                style="font-style:italic">设备才删除本地消息</text>
-            </svg>
-          </div>
-
-          <div class="qos-box">
-            <div class="qos-label">场景 B: 平台下发 (Sub)</div>
-            <svg width="400" height="300" viewBox="0 0 400 300">
-              <defs>
-                <marker id="arrow-y" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
-                  <path d="M0,0 L0,6 L9,3 z" fill="#f59e0b" />
-                </marker>
-                <marker id="arrow-g" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
-                  <path d="M0,0 L0,6 L9,3 z" fill="#22c55e" />
-                </marker>
-              </defs>
-              <line x1="90" y1="50" x2="90" y2="280" stroke="#fff" stroke-width="2" opacity="0.3" />
-              <line x1="310" y1="50" x2="310" y2="280" stroke="#fff" stroke-width="2" opacity="0.3" />
-
-              <rect x="50" y="20" width="80" height="30" rx="5" fill="#4facfe" /><text x="90" y="40"
-                text-anchor="middle" class="actor-text">Broker</text>
-              <rect x="270" y="20" width="80" height="30" rx="5" fill="#a855f7" /><text x="310" y="40"
-                text-anchor="middle" class="actor-text">设备</text>
-
-              <text x="150" y="90" fill="#22c55e" font-size="12">1. PUBLISH (ID=25)</text>
-              <path d="M90 100 L300 100" stroke="#22c55e" stroke-width="2" marker-end="url(#arrow-g)"
-                class="flow-line" />
-
-              <text x="250" y="145" fill="#f59e0b" font-size="12" text-anchor="end">2. PUBACK (ID=25)</text>
-              <path d="M310 155 L100 155" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrow-y)"
-                class="flow-line-back" />
-
-              <rect x="20" y="200" width="360" height="50" fill="rgba(245,158,11,0.1)" rx="5" />
-              <text x="200" y="220" text-anchor="middle" fill="#f59e0b" font-size="12">如果 PUBACK 丢失，Broker 会重发
-                PUBLISH</text>
-              <text x="200" y="240" text-anchor="middle" fill="#f59e0b" font-size="12">设备应用层需处理重复消息（幂等性）</text>
-            </svg>
-          </div>
-
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="slide">
-    <div class="card">
-      <div class="header-area">
-        <div class="title" style="color:var(--qos2-color); -webkit-text-fill-color: initial;">QoS 2: Exactly once
-          (只有一次)</div>
-        <div class="subtitle">"四次握手" —— 最可靠，最慢。保证消息不丢失、不重复。</div>
-      </div>
-      <div class="content-area">
-        <div class="qos-container">
-
-          <div class="qos-box">
-            <div class="qos-label">场景 A: 关键金融数据上报</div>
-            <svg width="400" height="360" viewBox="0 0 400 360">
-              <defs>
-                <marker id="arrow-r" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
-                  <path d="M0,0 L0,6 L9,3 z" fill="#ef4444" />
-                </marker>
-                <marker id="arrow-y" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
-                  <path d="M0,0 L0,6 L9,3 z" fill="#f59e0b" />
-                </marker>
-                <marker id="arrow-g" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
-                  <path d="M0,0 L0,6 L9,3 z" fill="#22c55e" />
-                </marker>
-              </defs>
-              <line x1="90" y1="50" x2="90" y2="340" stroke="#fff" stroke-width="2" opacity="0.3" />
-              <line x1="310" y1="50" x2="310" y2="340" stroke="#fff" stroke-width="2" opacity="0.3" />
-
-              <rect x="50" y="20" width="80" height="30" rx="5" fill="#a855f7" /><text x="90" y="40"
-                text-anchor="middle" class="actor-text">设备</text>
-              <rect x="270" y="20" width="80" height="30" rx="5" fill="#4facfe" /><text x="310" y="40"
-                text-anchor="middle" class="actor-text">Broker</text>
-
-              <text x="100" y="75" fill="#22c55e" font-size="11">1. PUBLISH</text>
-              <path d="M90 85 L300 85" stroke="#22c55e" stroke-width="2" marker-end="url(#arrow-g)" class="flow-line" />
-
-              <text x="300" y="125" text-anchor="end" fill="#f59e0b" font-size="11">2. PUBREC (收到)</text>
-              <path d="M310 135 L100 135" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrow-y)"
-                class="flow-line-back" />
-
-              <text x="100" y="175" fill="#ef4444" font-size="11">3. PUBREL (释放)</text>
-              <path d="M90 185 L300 185" stroke="#ef4444" stroke-width="2" marker-end="url(#arrow-r)"
-                class="flow-line" />
-
-              <text x="300" y="225" text-anchor="end" fill="#22c55e" font-size="11">4. PUBCOMP (完成)</text>
-              <path d="M310 235 L100 235" stroke="#22c55e" stroke-width="2" marker-end="url(#arrow-g)"
-                class="flow-line-back" />
-
-              <text x="200" y="290" text-anchor="middle" fill="#ddd" font-size="12">Broker 暂存消息，直到 PUBREL</text>
-            </svg>
-          </div>
-
-          <div class="qos-box">
-            <div class="qos-label">场景 B: 关键计费/控制下发</div>
-            <svg width="400" height="360" viewBox="0 0 400 360">
-              <defs>
-                <marker id="arrow-r" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
-                  <path d="M0,0 L0,6 L9,3 z" fill="#ef4444" />
-                </marker>
-                <marker id="arrow-y" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
-                  <path d="M0,0 L0,6 L9,3 z" fill="#f59e0b" />
-                </marker>
-                <marker id="arrow-g" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
-                  <path d="M0,0 L0,6 L9,3 z" fill="#22c55e" />
-                </marker>
-              </defs>
-              <line x1="90" y1="50" x2="90" y2="340" stroke="#fff" stroke-width="2" opacity="0.3" />
-              <line x1="310" y1="50" x2="310" y2="340" stroke="#fff" stroke-width="2" opacity="0.3" />
-
-              <rect x="50" y="20" width="80" height="30" rx="5" fill="#4facfe" /><text x="90" y="40"
-                text-anchor="middle" class="actor-text">Broker</text>
-              <rect x="270" y="20" width="80" height="30" rx="5" fill="#a855f7" /><text x="310" y="40"
-                text-anchor="middle" class="actor-text">设备</text>
-
-              <text x="100" y="75" fill="#22c55e" font-size="11">1. PUBLISH</text>
-              <path d="M90 85 L300 85" stroke="#22c55e" stroke-width="2" marker-end="url(#arrow-g)" class="flow-line" />
-
-              <text x="300" y="125" text-anchor="end" fill="#f59e0b" font-size="11">2. PUBREC</text>
-              <path d="M310 135 L100 135" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrow-y)"
-                class="flow-line-back" />
-
-              <text x="100" y="175" fill="#ef4444" font-size="11">3. PUBREL</text>
-              <path d="M90 185 L300 185" stroke="#ef4444" stroke-width="2" marker-end="url(#arrow-r)"
-                class="flow-line" />
-
-              <text x="300" y="225" text-anchor="end" fill="#22c55e" font-size="11">4. PUBCOMP</text>
-              <path d="M310 235 L100 235" stroke="#22c55e" stroke-width="2" marker-end="url(#arrow-g)"
-                class="flow-line-back" />
-
-              <text x="200" y="290" text-anchor="middle" fill="#ddd" font-size="12">保证业务逻辑只触发一次</text>
-            </svg>
-          </div>
-
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Slide 1: 什么是 Topic -->
-  <div class="slide">
-    <div class="card">
-      <div class="grid-split animate-box">
-        <div>
-          <div class="title anim-item delay-1">什么是 Topic</div>
-          <div class="subtitle anim-item delay-2">消息的逻辑组织方式</div>
-        </div>
-        <div class="text-body anim-item delay-3">
-          <ul class="list">
-            <li>Topic 是层级化的字符串路径，使用斜杠 <code>/</code> 分隔层级</li>
-            <li>用于表达设备、业务与数据流向，例如 <code>home/living-room/temp</code></li>
-            <li><strong>解耦核心</strong>：发布者与订阅者无需了解对方，只需关注共同的 Topic</li>
-            <li>Broker 根据订阅请求进行路由匹配（支持 <code>+</code> 和 <code>#</code> 通配符）</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Slide 2: Topic 设计原则 -->
-  <div class="slide">
-    <div class="card">
-      <div class="grid-split animate-box">
-        <div>
-          <div class="title anim-item delay-1">Topic 设计原则</div>
-          <div class="subtitle anim-item delay-2">物联网系统中的经验总结</div>
-        </div>
-        <div class="text-body anim-item delay-3">
-          <ul class="list">
-            <li><strong>明确方向性</strong>：在路径中区分 <code>control</code> (下行) / <code>status</code> (上行)</li>
-            <li><strong>避免自循环</strong>：不要让设备订阅自己发布的 Topic，防止逻辑闭环</li>
-            <li><strong>颗粒度适中</strong>：避免创建过深或过浅的层级，保持语义清晰且唯一</li>
-            <li><strong>权限隔离</strong>：设计时考虑安全，使用 ClientID 作为 Topic 的一部分以实现隔离</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="slide">
-    <div class="card">
-      <div class="grid-split animate-box">
-        <div>
-          <div class="title anim-item delay-1">apfree-wifidog 实战</div>
-          <div class="subtitle anim-item delay-2">Topic 与逻辑设计</div>
-        </div>
-        <div class="text-body anim-item delay-3">
-          <p><strong>Topic 结构推荐：</strong></p>
-          <code
-            style="display:block; background:#000; padding:15px; border-radius:8px; font-family:monospace; margin:10px 0; color:#4facfe;">
-          wifidogx/v1/{device_id}/s2c/request<br>
-          wifidogx/v1/{device_id}/s2c/response<br>
-          wifidogx/v1/{device_id}/c2s/request<br>
-          wifidogx/v1/{device_id}/c2s/response
-        </code>
-          <ul class="list" style="margin-top:20px">
-            <li><strong>s2c (Server to Client):</strong> 服务器 -> 客户端。服务器发起的控制命令，如重启、配置更新。</li>
-            <li><strong>c2s (Client to Server):</strong> 客户端 -> 服务器。设备上报的状态和事件，如心跳、告警。</li>
-            <li><strong>设计优势：</strong> 将命令类别（如重启、配置更新）放到MQTT JSON payload的"op"字段中，减少Broker的topic维护负担，实现更灵活的命令扩展。</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="slide">
-    <div class="card" style="text-align:center;">
-      <div class="animate-box">
-        <h2
-          style="background: linear-gradient(90deg, #66fcf1, #38bdf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-          加入技术交流群</h2>
-        <p style="color: #cbd5f5; margin-bottom: 30px;">欢迎扫码加入我们的 QQ 技术交流群，共同探讨 IPsec / VPP / 网络安全等前沿技术。</p>
-
-        <div style="position: relative; padding: 15px;">
-          <img src="qq-group.jpg" alt="QQ Group QR Code"
-            style="width: 420px; height: 620px; border-radius: 20px; border: 4px solid #38bdf8; box-shadow: 0 0 40px rgba(56, 189, 248, 0.4);">
-          <!-- Decorative corner markers -->
-          <div
-            style="position: absolute; top: 0; left: 0; width: 60px; height: 60px; border-top: 5px solid #66fcf1; border-left: 5px solid #66fcf1; border-radius: 20px 0 0 0;">
-          </div>
-          <div
-            style="position: absolute; bottom: 0; right: 0; width: 60px; height: 60px; border-bottom: 5px solid #66fcf1; border-right: 5px solid #66fcf1; border-radius: 0 0 20px 0;">
-          </div>
-        </div>
-
-        <p style="margin-top: 30px; font-size: 26px; color: #7dd3fc; font-weight: bold; letter-spacing: 2px;">
-          期待与你交流！
-        </p>
-      </div>
-    </div>
+  <div class="controls">
+    <button class="control-btn" onclick="prev()">⇠ Previous</button>
+    <button class="control-btn" onclick="next()">Next ⇢</button>
+    <button class="control-btn" onclick="toggleFullscreen()">⛶ Fullscreen</button>
   </div>
 
   <script>
-    // 状态管理
-    const state = {
-      current: 0,
-      slides: [],
-      bar: null,
-      total: 0,
-      isTransitioning: false
-    };
+    const slides = document.querySelectorAll('.slide');
+    const progressBar = document.getElementById('progressBar');
+    const slideInfo = document.getElementById('slideInfo');
+    let currentSlide = 0;
+    let currentStep = -1;
 
-    function init() {
-      state.slides = document.querySelectorAll('.slide');
-      state.bar = document.querySelector('.progress-bar');
-      state.total = state.slides.length;
-      showSlide(0);
-      bindEvents();
-    }
-
-    function showSlide(index) {
-      if (index < 0 || index >= state.total) return;
-      state.isTransitioning = true;
-
-      // 更新 Slide 类名
-      state.slides.forEach((slide, i) => {
-        slide.classList.toggle('active', i === index);
-        // 重置动画
-        if (i !== index) {
-          // 可选：离开时移除动画类，确保下次进入时重新触发
+    function updateSlide() {
+      slides.forEach((s, i) => {
+        s.classList.remove('active', 'prev');
+        if (i === currentSlide) {
+          s.classList.add('active');
+          const steps = s.querySelectorAll('.step');
+          steps.forEach((step, idx) => {
+            if (idx <= currentStep) {
+              step.classList.add('step-visible');
+            } else {
+              step.classList.remove('step-visible');
+            }
+          });
+        } else if (i < currentSlide) {
+          s.classList.add('prev');
         }
       });
 
-      state.current = index;
+      const total = slides.length;
+      const progress = ((currentSlide + 1) / total) * 100;
+      progressBar.style.width = `${progress}%`;
+      slideInfo.innerText = `${String(currentSlide + 1).padStart(2, '0')} / ${String(total).padStart(2, '0')}`;
+    }
 
-      // 更新进度条
-      if (state.bar) {
-        state.bar.style.width = ((index + 1) / state.total) * 100 + '%';
+    function next() {
+      const steps = slides[currentSlide].querySelectorAll('.step');
+      if (currentStep < steps.length - 1) {
+        currentStep++;
+        updateSlide();
+      } else if (currentSlide < slides.length - 1) {
+        currentSlide++;
+        currentStep = -1;
+        updateSlide();
       }
-
-      setTimeout(() => { state.isTransitioning = false; }, 600);
     }
 
-    function next() { showSlide(state.current + 1); }
-    function prev() { showSlide(state.current - 1); }
-
-    function bindEvents() {
-      // 键盘导航
-      document.addEventListener('keydown', e => {
-        if (['ArrowRight', 'ArrowDown', 'PageDown', 'Space', 'Enter'].includes(e.code)) next();
-        if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.code)) prev();
-      });
-
-      // 鼠标点击导航 (点击右侧前进，左侧后退)
-      document.addEventListener('click', e => {
-        // 忽略按钮点击
-        if (e.target.closest('button')) return;
-
-        const width = window.innerWidth;
-        if (e.clientX > width / 2) next();
-        else prev();
-      });
-
-      // 触摸滑动支持 (Mobile)
-      let touchStartX = 0;
-      document.addEventListener('touchstart', e => {
-        touchStartX = e.changedTouches[0].screenX;
-      }, { passive: true });
-
-      document.addEventListener('touchend', e => {
-        const touchEndX = e.changedTouches[0].screenX;
-        if (touchStartX - touchEndX > 50) next(); // 左滑前进
-        if (touchEndX - touchStartX > 50) prev(); // 右滑后退
-      }, { passive: true });
+    function prev() {
+      if (currentStep >= 0) {
+        currentStep--;
+        updateSlide();
+      } else if (currentSlide > 0) {
+        currentSlide--;
+        const prevSteps = slides[currentSlide].querySelectorAll('.step');
+        currentStep = prevSteps.length - 1;
+        updateSlide();
+      }
     }
 
-    // 全屏切换功能
-    window.toggleFullScreen = function () {
+    function toggleFullscreen() {
       if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(err => {
-          console.log(`Error attempting to enable full-screen mode: ${err.message}`);
-        });
+        document.documentElement.requestFullscreen();
       } else {
-        if (document.exitFullscreen) {
-          document.exitFullscreen();
-        }
+        document.exitFullscreen();
       }
     }
 
-    // 启动
-    document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('keydown', e => {
+      if (['ArrowRight', ' ', 'Enter', 'j'].includes(e.key)) next();
+      if (['ArrowLeft', 'Backspace', 'k'].includes(e.key)) prev();
+      if (e.key === 'f') toggleFullscreen();
+    });
+
+    updateSlide();
   </script>
 </body>
 
