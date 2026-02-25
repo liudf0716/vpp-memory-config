@@ -358,6 +358,71 @@ body.recording {
   <div class="footer">06</div>
 </div>
 
+<!-- 配置示例 -->
+<div class="slide">
+  <div class="container">
+    <h2>服务器配置示例（swanctl）</h2>
+    <div class="card">
+      <pre><code>connections {
+    panther {
+        # 基础网络配置（5.9.x全支持）
+        local_addrs = %any          # 本地服务端监听任意IP
+        remote_addrs = 124.126.137.35         # 允许任意远端IP发起连接
+
+        # 认证配置（PSK模式）
+        local {
+            auth = psk             # 本地使用预共享密钥认证
+            id = %any              # 本地ID匹配任意值
+        }
+        remote {
+            auth = psk             # 远端使用预共享密钥认证
+            id = %any              # 允许远端任意ID
+        }
+
+        pools = rw_pool
+
+        # 子连接（流量策略）
+        children {
+            site2site {
+                local_ts = 0.0.0.0/0   # 本地保护的网段（所有）
+                remote_ts = dynamic
+                if_id_in = 301          # 入站接口ID
+                if_id_out = 301         # 出站接口ID
+                start_action = trap     # 被动捕获流量触发协商（核心，替代主动发起）
+                esp_proposals = aes256gcm16-modp3072,aes128-sha1-modp1024,aes256gcm128-modp3072 # ESP加密提案
+                mode = tunnel           # 隧道模式
+            }
+        }
+
+        # IKEv2配置（5.9.x支持）
+        version = 2                # 强制使用IKEv2
+        mobike = yes               # 支持MOBIKE（移动IP）
+        proposals = aes256gcm128-prfsha1-modp3072,aes256-sha1-modp2048  # IKE提案
+        dpd_delay = 0s             # 关闭DPD检测（按需调整）
+        keyingtries = 3            # 密钥协商重试次数
+    }
+}
+
+# 地址池配置
+pools {
+    rw_pool {
+        addrs = 10.3.0.2-10.3.0.100      # 分配给远端的地址池
+    }
+}
+
+# 预共享密钥配置
+secrets {
+    ike-panther {
+        secret = notasecret        # PSK密钥（生产环境务必替换为强密钥）
+        id-peer = %any             # 匹配任意远端ID
+    }
+}
+</code></pre>
+    </div>
+  </div>
+  <div class="footer">07</div>
+</div>
+
 <!-- 转发 -->
 <div class="slide">
   <div class="container">
@@ -370,7 +435,7 @@ body.recording {
       <code>ip route add 192.168.88.0/24 dev xfrm301</code>
     </div>
   </div>
-  <div class="footer">07</div>
+  <div class="footer">08</div>
 </div>
 
 <!-- 拓扑 -->
@@ -405,7 +470,7 @@ body.recording {
       </svg>
     </div>
   </div>
-  <div class="footer">08</div>
+  <div class="footer">09</div>
 </div>
 
 <!-- 总结 -->
@@ -423,7 +488,7 @@ body.recording {
       <!-- 联系信息已移除（使用专页二维码页展示群信息） -->
     </div>
   </div>
-  <div class="footer">09</div>
+  <div class="footer">10</div>
 </div>
 
 <div class="nav">
@@ -444,12 +509,12 @@ body.recording {
       <p style="margin-top:16px; color:var(--sub);">欢迎大家扫码加入讨论群，或直接添加 QQ <b style="color:var(--bili-pink);">12345678</b> 联系我邀请入群。</p>
     </div>
   </div>
-  <div class="footer">10</div>
+  <div class="footer">11</div>
 </div>
 
 <div class="hud">
   <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
-  <div class="page-indicator" id="pageIndicator">01 / 09</div>
+  <div class="page-indicator" id="pageIndicator">01 / 11</div>
 </div>
 
 <script>
