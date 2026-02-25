@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>免费大模型工程实测对比</title>
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+        font-family: "Segoe UI", Arial, sans-serif;
+        color: #ffffff;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .container {
+        width: 1100px;
+        text-align: center;
+    }
+
+    .tag {
+        display: inline-block;
+        background: #ef4444;
+        padding: 8px 18px;
+        border-radius: 30px;
+        font-size: 14px;
+        letter-spacing: 1px;
+        margin-bottom: 20px;
+    }
+
+    h1 {
+        font-size: 44px;
+        margin: 10px 0 30px 0;
+        letter-spacing: 2px;
+    }
+
+    .vs {
+        font-size: 36px;
+        color: #facc15;
+        margin-bottom: 40px;
+        font-weight: bold;
+    }
+
+    .models {
+        display: flex;
+        justify-content: space-between;
+        gap: 40px;
+    }
+
+    .card {
+        flex: 1;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 18px;
+        padding: 40px;
+        backdrop-filter: blur(8px);
+        box-shadow: 0 0 30px rgba(0,0,0,0.5);
+        transition: 0.3s;
+    }
+
+    .card:hover {
+        transform: translateY(-5px);
+    }
+
+    .card h2 {
+        font-size: 26px;
+        margin-bottom: 15px;
+    }
+
+    .highlight {
+        color: #38bdf8;
+        font-weight: bold;
+        margin-top: 15px;
+        font-size: 18px;
+    }
+
+    .footer {
+        margin-top: 50px;
+        font-size: 18px;
+        color: #94a3b8;
+    }
+
+</style>
+</head>
+<body>
+    <div class="container">
+        <div class="tag">免费模型 · 工程实测 · 公平对比</div>
+        <h1>免费大模型到底能不能用？</h1>
+        <div class="vs">LLaMA 3.3 70B  VS  Qwen 2.5 Coder 32B</div>
+
+        <div class="models">
+            <div class="card">
+                <h2>LLaMA 3.3 70B</h2>
+                <p>大参数规模</p>
+                <p>通用能力模型</p>
+                <div class="highlight">测试重点：意图理解准确性</div>
+            </div>
+
+            <div class="card">
+                <h2>Qwen 2.5 Coder 32B</h2>
+                <p>偏代码与结构理解</p>
+                <p>中等参数规模</p>
+                <div class="highlight">测试重点：参数提取稳定性</div>
+            </div>
+        </div>
+
+        <div class="footer">
+            相同 Prompt · 英伟达免费接口 · AWAS 小茶智能助手
+        </div>
+    </div>
+</body>
+</html>
