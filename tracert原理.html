@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tracert 原理深度解析</title>
+    <style>
+        :root {
+            --primary-color: #00e6ff;
+            --bg-color: #0a0e14;
+            --text-color: #e0e0e0;
+            --accent-color: #ff3e3e;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow: hidden;
+        }
+
+        .slide {
+            display: none;
+            height: 100vh;
+            width: 100vw;
+            padding: 60px;
+            box-sizing: border-box;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            transition: all 0.5s ease;
+        }
+
+        .slide.active {
+            display: flex;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        h1 { font-size: 3.5rem; color: var(--primary-color); margin-bottom: 20px; }
+        h2 { font-size: 2.5rem; color: var(--primary-color); }
+        p { font-size: 1.5rem; line-height: 1.6; max-width: 900px; }
+
+        .highlight { color: var(--primary-color); font-weight: bold; }
+        .step-box {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-left: 5px solid var(--primary-color);
+            margin: 15px;
+            text-align: left;
+            width: 80%;
+        }
+
+        .code-block {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            color: #7dfa7d;
+            font-size: 1.2rem;
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            background: var(--primary-color);
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-weight: bold;
+            border-radius: 5px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 模拟路由图示 */
+        .network-node {
+            display: inline-block;
+            width: 80px;
+            height: 80px;
+            border: 3px solid var(--primary-color);
+            border-radius: 50%;
+            line-height: 80px;
+            margin: 0 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <section class="slide active">
+        <h1>揭秘 Tracert 原理</h1>
+        <p>它是如何探测出数据包前往目的地经过了哪些“车站”的？</p>
+        <p style="font-size: 1rem; opacity: 0.6;">(点击页面或使用方向键翻页)</p>
+    </section>
+
+    <section class="slide">
+        <h2>核心武器：TTL (生存时间)</h2>
+        <p>TTL 是 IP 数据报文中的一个字段。</p>
+        <div class="step-box">
+            <p>1. 每经过一个路由器，TTL 值就会 <span class="highlight">-1</span>。</p>
+            <p>2. 当 TTL 减到 <span class="highlight">0</span> 时，路由器会丢弃该包。</p>
+            <p>3. 关键点：路由器会向发送者回发一个 <span class="accent-color">ICMP 超时报文</span>。</p>
+        </div>
+    </section>
+
+    <section class="slide">
+        <h2>第一步：寻找第一个“车站”</h2>
+        <p>电脑发送一个 <span class="highlight">TTL = 1</span> 的数据包。</p>
+        <div class="code-block">Packet (TTL=1) ---> [网关/路由器1]</div>
+        <p>路由器1 将 TTL 减为 0，丢弃它，并告诉你：“我是路由器1，包在我这儿断了。”</p>
+    </section>
+
+    <section class="slide">
+        <h2>第二步：寻找第二个“车站”</h2>
+        <p>电脑发送一个 <span class="highlight">TTL = 2</span> 的数据包。</p>
+        <div class="code-block">Packet (TTL=2) ---> [路由1(TTL变成1)] ---> [路由2(TTL变成0)]</div>
+        <p>路由器2 重复同样的操作，回发超时报文。这样你就拿到了第二个节点的 IP。</p>
+    </section>
+
+    <section class="slide">
+        <h2>直到抵达终点</h2>
+        <p>不断增加 TTL 值（3, 4, 5...），直到数据包到达目标主机。</p>
+        <p>目标主机会返回一个 <span class="highlight">ICMP 回显应答</span> 或端口不可达报文，探测结束。</p>
+    </section>
+
+    <section class="slide">
+        <h2>总结</h2>
+        <div class="step-box">
+            <p>● <b>主动出击</b>：从 TTL=1 开始递增发送报文。</p>
+            <p>● <b>借刀杀人</b>：利用路由器的“超时报错”获取节点身份。</p>
+            <p>● <b>精准测量</b>：每个节点发 3 次包，计算出往返时间（RTT）。</p>
+        </div>
+        <p class="highlight">这就是网络世界的“投石问路”！</p>
+    </section>
+
+    <section class="slide">
+        <h2>欢迎加入技术交流群</h2>
+        <p>扫码加入 QQ 群，一起探讨网络、AI、OpenWrt、开源等 IT 相关主题。</p>
+        <div style="margin-top: 30px;">
+            <img src="qq-group.jpg" alt="QQ群二维码" style="max-width: 300px; border-radius: 10px; box-shadow: 0 0 20px rgba(0,230,255,0.5); border: 2px solid var(--primary-color);">
+        </div>
+        <p style="margin-top: 20px; font-size: 1.2rem; color: var(--primary-color);">扫描二维码，开启极致技术之旅</p>
+    </section>
+
+    <div class="controls">
+        <button onclick="prevSlide()">上一页</button>
+        <button onclick="nextSlide()">下一页</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+
+        function showSlide(index) {
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (index + slides.length) % slides.length;
+            slides[currentSlide].classList.add('active');
+        }
+
+        function nextSlide() { showSlide(currentSlide + 1); }
+        function prevSlide() { showSlide(currentSlide - 1); }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
+            if (e.key === 'ArrowLeft') prevSlide();
+        });
+
+        document.addEventListener('click', (e) => {
+            if (e.target.tagName !== 'BUTTON') nextSlide();
+        });
+    </script>
+</body>
+</html>
