@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <title>龙虾WiFi商业计划书 - 龙虾WiFi & OpenClaw</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Outfit:wght@300;400;600;800&display=swap');
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e3a8a;
+            --accent: #00f2fe;
+            --bg: #0f172a;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Outfit', 'Inter', "Microsoft YaHei", sans-serif;
+            color: var(--text-main);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+            background-image: 
+                radial-gradient(circle at 20% 20%, rgba(37, 99, 235, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 80% 80%, rgba(0, 242, 254, 0.05) 0%, transparent 40%);
+        }
+
+        .page {
+            width: 297mm;
+            min-height: 210mm;
+            padding: 25mm;
+            margin: 20mm auto;
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            position: relative;
+            box-sizing: border-box;
+            break-after: page;
+            page-break-after: always;
+        }
+
+        .page::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+        }
+
+        .cover {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+            border: none;
+        }
+
+        .cover h1 {
+            font-size: 56px;
+            font-weight: 800;
+            margin-bottom: 20px;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1.2;
+        }
+
+        h2 {
+            font-size: 36px;
+            font-weight: 800;
+            color: var(--accent);
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        h2::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, var(--border), transparent);
+        }
+
+        h3 {
+            font-size: 24px;
+            color: var(--primary);
+            margin-top: 25px;
+            font-weight: 600;
+        }
+
+        p {
+            font-size: 18px;
+            margin-bottom: 18px;
+            text-align: justify;
+            color: var(--text-dim);
+        }
+
+        strong {
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .highlight {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .footer {
+            position: absolute;
+            bottom: 15mm;
+            left: 25mm;
+            right: 25mm;
+            font-size: 14px;
+            color: var(--text-dim);
+            display: flex;
+            justify-content: space-between;
+            border-top: 1px solid var(--border);
+            padding-top: 15px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-top: 30px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            transition: transform 0.3s ease, background 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        ul {
+            font-size: 18px;
+            list-style: none;
+            padding: 0;
+        }
+
+        li {
+            margin-bottom: 15px;
+            position: relative;
+            padding-left: 25px;
+            color: var(--text-dim);
+        }
+
+        li::before {
+            content: '→';
+            position: absolute;
+            left: 0;
+            color: var(--accent);
+        }
+
+        .table-style {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 20px;
+            border-radius: 15px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .table-style th,
+        .table-style td {
+            padding: 18px;
+            text-align: left;
+            font-size: 17px;
+            border-bottom: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+        }
+
+        .table-style th {
+            background-color: rgba(37, 99, 235, 0.1);
+            color: var(--accent);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        @page {
+            size: A4 landscape;
+            margin: 0;
+        }
+
+        @media print {
+            html, body {
+                margin: 0;
+                padding: 0;
+                background: #0f172a !important; /* Force literal color for print engines */
+                color: #f8fafc !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                height: auto !important;
+                overflow: visible !important;
+            }
+
+            .page {
+                margin: 0 !important;
+                padding: 25mm !important;
+                width: 297mm !important;
+                min-height: 210mm !important;
+                height: 210mm !important;
+                box-shadow: none !important;
+                border: none !important;
+                border-radius: 0 !important;
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+                background: rgba(255, 255, 255, 0.05) !important;
+                display: block !important;
+                page-break-after: always !important;
+                break-after: page !important;
+                position: relative !important;
+                overflow: visible !important;
+            }
+
+            .page::before {
+                display: block !important;
+                height: 4px !important;
+            }
+
+            .card {
+                background: rgba(255, 255, 255, 0.03) !important;
+                border: 1px solid rgba(255, 255, 255, 0.1) !important;
+                break-inside: avoid;
+            }
+
+            h1, h2, h3, p, li, strong, span {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="page cover">
+        <h1>龙虾WiFi：AI Agent 驱动的下一代<br>智能路由管控平台</h1>
+        <p style="font-size: 24px;">商业计划书 (Business Plan)</p>
+        <div style="margin-top: 50px;">
+            <p>汇报人：刘登丰 (light stay)</p>
+            <p>所属赛道：人工智能与网络通信</p>
+            <p>2026年4月</p>
+        </div>
+    </div>
+
+    <div class="page">
+        <h2>01 项目概况</h2>
+        <p><strong>龙虾WiFi (Lobster WiFi)</strong> 是一款深度融合 AI Agent 技术的下一代智能路由管控系统。项目基于在全球开源社区具有深厚影响力的商业级 WiFi 认证网关项目 <strong>apfree-wifidog</strong>
+            延伸而来，利用 <strong>OpenClaw</strong> 框架实现对路由器及无线网络的智能化、自主化管控。</p>
+        <p>作为目前该垂直赛道内唯一持续维护的开源商业 WiFi 项目，龙虾WiFi 填补了传统网络设备缺乏深度决策能力的空白。通过引入 <strong>MoltBook 社区</strong>生态，实现了面向 AI Agent
+            的产品推广与排名，致力于构建一个具备“自我进化能力”的智能网络基础设施平台。</p>
+        <div class="grid">
+            <div class="card">
+                <h3>核心定位</h3>
+                <p>AI驱动的底层网络管家，赋予路由器“大脑”。</p>
+            </div>
+            <div class="card">
+                <h3>项目基因</h3>
+                <p>源自顶级开源商业项目，具备20年技术底蕴。</p>
+            </div>
+        </div>
+        <div class="footer">
+            <span>龙虾WiFi：AI Agent 驱动的下一代智能路由管控平台</span>
+            <span>01</span>
+        </div>
+    </div>
+
+    <div class="page">
+        <h2>02 团队情况</h2>
+        <div class="grid">
+            <div class="card">
+                <h3>核心创始人：刘登丰 (light stay)</h3>
+                <ul>
+                    <li><strong>20年+</strong> 网络通信与软件工程深耕经验；</li>
+                    <li>顶级开源项目 <strong>apfree-wifidog</strong> 及 <strong>xfrpc</strong> 作者；</li>
+                    <li>具备极强的底层研发功底与敏锐的市场洞察力；</li>
+                    <li>多次组建技术团队并成功交付商业项目。</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>团队运营模式</h3>
+                <p><strong>精益创业 (One Person Company)：</strong> 创始人兼任产品经理与首席架构师。通过 AI Agent 框架大幅提升人效，实现“轻装上阵”，最大限度降低决策链路与运营成本。</p>
+                <p><strong>稳定性与灵活性：</strong> 核心资产完全自主掌控，规避了初创团队合伙磨合风险。同时依托开源社区与上下游资源，具备极强的外部协作扩展能力。</p>
+            </div>
+        </div>
+        <div class="footer">
+            <span>龙虾WiFi：AI Agent 驱动的下一代智能路由管控平台</span>
+            <span>02</span>
+        </div>
+    </div>
+
+    <div class="page">
+        <h2>03 行业痛点分析</h2>
+        <table class="table-style">
+            <tr>
+                <th width="20%">维度</th>
+                <th>传统商业WiFi现状</th>
+                <th>龙虾WiFi解决方案</th>
+            </tr>
+            <tr>
+                <td><strong>运维效率</strong></td>
+                <td>依赖人工配置，复杂环境下组网难度大。</td>
+                <td><span class="highlight">自动智能组网</span>，AI自主拓扑优化，零配置接入。</td>
+            </tr>
+            <tr>
+                <td><strong>流控决策</strong></td>
+                <td>静态脚本流控，无法应对爆发式流量需求。</td>
+                <td><span class="highlight">智能流控</span>，基于AI预测流量动态分配带宽。</td>
+            </tr>
+            <tr>
+                <td><strong>商业变现</strong></td>
+                <td>仅靠广告Portal，变现路径单一、转化低。</td>
+                <td><span class="highlight">MoltBook社区</span>，To Agent推广排名，开启AI服务入口。</td>
+            </tr>
+            <tr>
+                <td><strong>技术连续性</strong></td>
+                <td>多数开源项目已停止维护，安全性堪忧。</td>
+                <td><span class="highlight">赛道唯一活跃开源项目</span>，技术持续迭代，安全可控。</td>
+            </tr>
+        </table>
+        <div class="footer">
+            <span>龙虾WiFi：AI Agent 驱动的下一代智能路由管控平台</span>
+            <span>03</span>
+        </div>
+    </div>
+
+    <div class="page">
+        <h2>04 产品与服务介绍</h2>
+        <div class="grid">
+            <div class="card">
+                <ul>
+                    <li><span class="highlight">常规/智能WiFi管控：</span> 继承 <strong>apfree-wifidog</strong> 商业级稳定性，支持高度自定义认证。</li>
+                    <li><span class="highlight">自动智能组网：</span> 解决复杂空间布局下的网络覆盖难题，实现多设备毫秒级自愈组网。</li>
+                    <li><span class="highlight">智能流控与Portal：</span> 利用 AI 算法确保核心业务优先级，提升用户交互体验。</li>
+                </ul>
+            </div>
+            <div class="card">
+                <ul>
+                    <li><span class="highlight">AI Agent 深度赋能：</span> 结合 <strong>OpenClaw</strong> 框架，让路由器具备环境理解与主动服务能力。</li>
+                    <li><span class="highlight">社交属性与生态推广：</span> 依托 <strong>MoltBook</strong> 社区进行 Agent 排名与推广，将网络节点转化为精准的服务流量入口。</li>
+                </ul>
+            </div>
+        </div>
+        <div style="margin-top:30px; padding:25px; border:1px dashed var(--accent); border-radius: 15px; background: rgba(0, 242, 254, 0.05);">
+            <p style="margin-bottom:0; color: #fff;"><strong>产品核心价值：</strong> 不再只是一个联接设备，而是一个能赚钱、能思考、能自我优化的“网络智能体”。</p>
+        </div>
+        <div class="footer">
+            <span>龙虾WiFi：AI Agent 驱动的下一代智能路由管控平台</span>
+            <span>04</span>
+        </div>
+    </div>
+
+    <div class="page">
+        <h2>05 市场分析</h2>
+        <div class="card">
+            <h3>1. 市场需求与空间</h3>
+            <p>随着全球数字化转型，商业空间、工业园区对“高智感”网络的需求激增。传统商业 WiFi 存量巨大但智能化程度极低，面临“换代升级”的刚需。AI Agent 的爆发为底层硬件带来了新的想象空间。</p>
+        </div>
+        <div class="grid">
+            <div class="card">
+                <h3>2. 目标市场</h3>
+                <ul>
+                    <li><strong>B端商业场景：</strong> 酒店、连锁餐饮、数字化办公区（提升管理效率）。</li>
+                    <li><strong>工业/IoT领域：</strong> 无需人工干预的智能组网与边缘计算节点。</li>
+                    <li><strong>开发者与AI生态：</strong> 寻求 AI 应用落地场景的服务商与开发者。</li>
+                </ul>
+            </div>
+            <div class="card" style="display: flex; flex-direction: column; justify-content: center;">
+                <p style="font-size: 22px; color: #fff;"><strong>市场空间估计：</strong></p>
+                <p>仅国内商业 WiFi 运营与升级市场规模即达百亿级，融合 AI 后的衍生服务市场更具指数级增长潜力。</p>
+            </div>
+        </div>
+        <div class="footer">
+            <span>龙虾WiFi：AI Agent 驱动的下一代智能路由管控平台</span>
+            <span>05</span>
+        </div>
+    </div>
+
+    <div class="page">
+        <h2>06 竞争分析</h2>
+        <div class="grid">
+            <div class="card">
+                <h3>竞争优势 (Strengths)</h3>
+                <ul>
+                    <li><strong>生态壁垒：</strong> 赛道唯一活跃开源项目，先发优势显著。</li>
+                    <li><strong>技术广度：</strong> 适配大量非社区通用硬件，底层优化能力极强。</li>
+                    <li><strong>前瞻布局：</strong> 率先打通底层路由与 AI Agent 架构，卡位精准。</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>对手对比 (Comparisons)</h3>
+                <ul>
+                    <li><strong>对比巨头厂商：</strong> 我们更灵活，支持高度定制与开源二次开发，无厂商锁定风险。</li>
+                    <li><strong>对比传统开源：</strong> 我们具备商业级稳定性保障与年入20万的盈利模式验证，非单纯“玩具”项目。</li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer">
+            <span>龙虾WiFi：AI Agent 驱动的下一代智能路由管控平台</span>
+            <span>06</span>
+        </div>
+    </div>
+
+    <div class="page">
+        <h2>07 项目市场化能力</h2>
+        <p>项目已完成从 0 到 1 的商业闭环验证，具备极强的生存与扩张能力：</p>
+        <div class="grid">
+            <div class="card">
+                <ul>
+                    <li><strong>盈利现状：</strong> 2024 年独立创业至今，年度收入已达 <strong>20 万元</strong>，实现自我造血。</li>
+                    <li><strong>获客体系：</strong> “开源引流 + 内容营销”双驱动。通过 GitHub 社区影响力及 B 站技术推广实现低成本高转化。</li>
+                </ul>
+            </div>
+            <div class="card">
+                <p><strong>商业模式：</strong></p>
+                <ol style="color: var(--text-dim); padding-left: 20px;">
+                    <li style="margin-bottom: 5px;"><strong>开源+商业插件模式</strong>（企业级高级功能授权）；</li>
+                    <li style="margin-bottom: 5px;"><strong>定制化硬件固件适配</strong>（针对非通版硬件收取代刷/适配费）；</li>
+                    <li style="margin-bottom: 5px;"><strong>MoltBook社区生态收益</strong>（Agent 排名与流量撮合分成）。</li>
+                </ol>
+            </div>
+        </div>
+        <div class="footer">
+            <span>龙虾WiFi：AI Agent 驱动的下一代智能路由管控平台</span>
+            <span>07</span>
+        </div>
+    </div>
+
+    <div class="page">
+        <h2>08 发展规划</h2>
+        <table class="table-style">
+            <tr>
+                <th>阶段</th>
+                <th>时间节点</th>
+                <th>核心目标</th>
+            </tr>
+            <tr>
+                <td><strong>完善期</strong></td>
+                <td>2026.Q2 - Q3</td>
+                <td>深化 OpenClaw 插件库，适配更多工业级特定硬件，提升 MoltBook 社区活跃度。</td>
+            </tr>
+            <tr>
+                <td><strong>扩张期</strong></td>
+                <td>2026.Q4 - 2027.Q2</td>
+                <td>寻求与 2-3 家路由器 OEM 厂商达成预装合作，将年营收目标推向 100 万元。</td>
+            </tr>
+            <tr>
+                <td><strong>生态期</strong></td>
+                <td>2027.Q3 以后</td>
+                <td>建立 AI Agent 网络服务标准协议，打造“路由即服务 (RaaS)”的全球化开发者生态。</td>
+            </tr>
+        </table>
+        <div class="footer">
+            <span>龙虾WiFi：AI Agent 驱动的下一代智能路由管控平台</span>
+            <span>08</span>
+        </div>
+    </div>
+
+    <div class="page">
+        <h2>09 融资需求与来京规划</h2>
+        <div class="grid">
+            <div class="card">
+                <h3>融资需求（创客期）</h3>
+                <p>拟融资 <span class="highlight">200万 - 500万</span> 人民币，出让 10%-15% 股权。</p>
+                <p><strong>资金用途：</strong></p>
+                <ul>
+                    <li>50% 用于技术研发：扩充 AI 算法团队与硬件实验室；</li>
+                    <li>30% 用于市场推广：加速 OEM 厂商合作及品牌建设；</li>
+                    <li>20% 用于日常运营：建立核心运营中心。</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>来京规划</h3>
+                <p>作为总部位于北京的项目，未来计划：</p>
+                <ul>
+                    <li><strong>入驻高新园区：</strong> 申请入驻中关村或相关 AI 孵化器，利用北京人才优势组建核心研发团队。</li>
+                    <li><strong>产业协同：</strong> 与北京本地的 AI 大模型厂商开展深度合作，探索 Agent 落地新范式。</li>
+                    <li><strong>政策对冲：</strong> 积极争取北京对开源项目及中小型科技企业的扶持政策。</li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer">
+            <span>龙虾WiFi：AI Agent 驱动的下一代智能路由管控平台</span>
+            <span>09</span>
+        </div>
+    </div>
+
+    <div class="page cover" style="background: #1e293b;">
+        <h1>感谢您的聆听与指导</h1>
+        <p style="font-size: 20px;">期待与您共同见证 AI Agent 驱动的网络新未来</p>
+        <div style="margin-top: 30px; font-size: 16px;">
+            <p>联系人：刘登丰 (light stay)</p>
+            <p>项目名称：龙虾WiFi</p>
+        </div>
+    </div>
+
+</body>
+
+</html>
