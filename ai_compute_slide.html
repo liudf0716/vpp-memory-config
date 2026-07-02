@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>AI算力过剩风暴 - 自动翻页演示文稿</title>
+    <title>AI算力过剩风暴 - 演示文稿</title>
     <style>
         * {
             box-sizing: border-box;
@@ -342,9 +342,6 @@
     <script>
         const slides = document.querySelectorAll('.slide');
         let currentIndex = 0;
-        const autoInterval = 8000; // 自动翻页间隔（毫秒），这里设为8秒
-        let slideTimer = null;
-        let resumeTimer = null;
 
         function showSlide(index) {
             slides[currentIndex].classList.remove('active');
@@ -360,43 +357,14 @@
             showSlide(currentIndex - 1);
         }
 
-        // 启动自动播放
-        function startAutoPlay() {
-            if(!slideTimer) {
-                slideTimer = setInterval(nextSlide, autoInterval);
-            }
-        }
-
-        // 暂停自动播放
-        function stopAutoPlay() {
-            clearInterval(slideTimer);
-            slideTimer = null;
-            
-            // 如果用户手动介入，清除旧的恢复定时器，重新等待15秒后恢复自动翻页
-            clearTimeout(resumeTimer);
-            resumeTimer = setTimeout(() => {
-                startAutoPlay();
-            }, 15000); 
-        }
-
         // 键盘快捷键监听
         document.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowRight' || e.key === ' ') {
-                stopAutoPlay();
                 nextSlide();
             } else if (e.key === 'ArrowLeft') {
-                stopAutoPlay();
                 prevSlide();
             }
         });
-
-        // 触摸屏或鼠标边缘点击介入时，也应当暂停自动定时器
-        document.querySelectorAll('.nav-zone').forEach(zone => {
-            zone.addEventListener('click', stopAutoPlay);
-        });
-
-        // 初始化自动播放
-        startAutoPlay();
     </script>
 </body>
 </html>
