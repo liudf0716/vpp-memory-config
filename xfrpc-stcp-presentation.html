@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>xfrpc STCP 代理功能讲解</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922; --purple: #bc8cff;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+
+  /* Slide container */
+  .slide {
+    min-height: 100vh; padding: 60px 80px; display: flex; flex-direction: column;
+    justify-content: center; position: relative; border-bottom: 1px solid var(--border);
+  }
+  .slide-number {
+    position: absolute; bottom: 20px; right: 40px; color: var(--muted); font-size: 14px;
+  }
+
+  /* Typography */
+  h1 { font-size: 3em; margin-bottom: 0.3em; background: linear-gradient(135deg, var(--accent), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  h2 { font-size: 2em; margin-bottom: 0.5em; color: var(--accent); }
+  h3 { font-size: 1.4em; margin-bottom: 0.4em; color: var(--green); }
+  p, li { font-size: 1.25em; line-height: 1.7; color: var(--text); }
+  .subtitle { font-size: 1.3em; color: var(--muted); margin-bottom: 2em; }
+
+  /* Layout helpers */
+  .cols { display: grid; gap: 40px; margin-top: 20px; }
+  .cols-2 { grid-template-columns: 1fr 1fr; }
+  .cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 24px; margin: 10px 0;
+  }
+  .card h3 { margin-top: 0; }
+
+  /* Code blocks */
+  pre {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; overflow-x: auto; font-size: 0.95em; line-height: 1.5;
+  }
+  code { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+  .inline-code { background: var(--surface); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+
+  /* Highlight boxes */
+  .highlight { border-left: 4px solid var(--accent); padding: 16px 20px; background: rgba(88,166,255,0.08); border-radius: 0 8px 8px 0; margin: 16px 0; }
+  .warning { border-left: 4px solid var(--red); padding: 16px 20px; background: rgba(248,81,73,0.08); border-radius: 0 8px 8px 0; margin: 16px 0; }
+  .success { border-left: 4px solid var(--green); padding: 16px 20px; background: rgba(63,185,80,0.08); border-radius: 0 8px 8px 0; margin: 16px 0; }
+
+  /* Lists */
+  ul { padding-left: 1.5em; }
+  li { margin: 8px 0; }
+  li::marker { color: var(--accent); }
+
+  /* Flow arrows */
+  .flow {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    justify-content: center; margin: 20px 0; font-size: 1.1em;
+  }
+  .flow-node {
+    background: var(--surface); border: 2px solid var(--accent); border-radius: 8px;
+    padding: 10px 18px; text-align: center;
+  }
+  .flow-arrow { color: var(--accent); font-size: 1.5em; }
+  .flow-secret { color: var(--yellow); font-size: 0.85em; }
+
+  /* Comparison table */
+  table {
+    width: 100%; border-collapse: collapse; margin: 16px 0;
+    font-size: 1.1em;
+  }
+  th, td { padding: 12px 16px; border: 1px solid var(--border); text-align: left; }
+  th { background: var(--surface); color: var(--accent); }
+  tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+
+  /* Animation */
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  .slide > * { animation: fadeUp 0.5s ease-out; }
+
+  /* Badge */
+  .badge {
+    display: inline-block; padding: 4px 12px; border-radius: 20px;
+    font-size: 0.8em; font-weight: 600; margin-right: 8px;
+  }
+  .badge-red { background: rgba(248,81,73,0.2); color: var(--red); }
+  .badge-green { background: rgba(63,185,80,0.2); color: var(--green); }
+  .badge-blue { background: rgba(88,166,255,0.2); color: var(--accent); }
+
+  /* Keyframes for attack animation */
+  .attack-line { color: var(--red); font-size: 0.85em; opacity: 0.7; }
+</style>
+</head>
+<body>
+
+<!-- ==================== SLIDE 1: Title ==================== -->
+<div class="slide">
+  <h1>🔒 xfrpc STCP 代理功能</h1>
+  <p class="subtitle">Secret TCP — 安全的内网服务暴露方案</p>
+  <div style="margin-top: 40px;">
+    <p><span class="badge badge-blue">xfrpc</span> C 语言高性能内网穿透客户端</p>
+    <p style="margin-top: 12px;"><span class="badge badge-green">STCP</span> 基于共享密钥的安全 TCP 代理</p>
+  </div>
+  <div class="slide-number">1 / 9</div>
+</div>
+
+<!-- ==================== SLIDE 2: Problem Statement ==================== -->
+<div class="slide">
+  <h2>🚨 问题：内网服务直接暴露到公网</h2>
+  <p style="margin-bottom: 20px;">以 SSH 服务为例，将内网 SSH 端口映射到公网后：</p>
+
+  <div class="warning">
+    <h3>⚠️ SSH 暴力破解攻击</h3>
+    <p>互联网上存在大量自动化扫描工具，持续对公网 IP 的 22 端口进行密码暴力破解。一个暴露在公网的 SSH 服务，每分钟可能遭受数十次甚至上百次登录尝试。</p>
+  </div>
+
+  <div class="cols cols-2">
+    <div class="card">
+      <h3>🔓 安全风险</h3>
+      <ul>
+        <li>弱密码被破解 → 服务器被入侵</li>
+        <li>即使使用密钥认证，暴力破解仍会产生大量无效连接</li>
+        <li>攻击者可能利用 SSH 漏洞进行远程代码执行</li>
+        <li>服务器成为跳板，被用于攻击其他目标</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>💥 性能压力</h3>
+      <ul>
+        <li>大量无效连接消耗 CPU 和内存资源</li>
+        <li>SSH 守护进程需要处理每次认证请求</li>
+        <li>日志文件快速膨胀，影响磁盘空间</li>
+        <li>正常用户的连接质量受到影响</li>
+      </ul>
+    </div>
+  </div>
+
+  <pre style="margin-top: 20px;"><code># 典型的 SSH 暴力破解日志
+Jun 14 08:23:01 server sshd[12345]: Failed password for root from 1.2.3.4 port 54321
+Jun 14 08:23:02 server sshd[12346]: Failed password for admin from 5.6.7.8 port 12345
+Jun 14 08:23:03 server sshd[12347]: Failed password for root from 9.10.11.12 port 67890
+... 每分钟数十条类似记录</code></pre>
+  <div class="slide-number">2 / 9</div>
+</div>
+
+<!-- ==================== SLIDE 3: What is STCP ==================== -->
+<div class="slide">
+  <h2>🔐 解决方案：STCP（Secret TCP）</h2>
+
+  <div class="success">
+    <p><strong>核心思想：</strong>不再将服务端口直接暴露到公网，而是通过一个<strong>共享密钥（Secret Key）</strong>来控制访问权限。只有持有正确密钥的访客才能连接。</p>
+  </div>
+
+  <div class="cols cols-2" style="margin-top: 20px;">
+    <div class="card">
+      <h3>普通 TCP 代理</h3>
+      <p style="color: var(--red);">服务监听公网端口</p>
+      <p>任何人都可以尝试连接</p>
+      <p>面临暴力破解风险</p>
+    </div>
+    <div class="card" style="border-color: var(--green);">
+      <h3>STCP 代理</h3>
+      <p style="color: var(--green);">服务不监听公网端口</p>
+      <p>需要密钥才能访问</p>
+      <p>完全规避暴力破解</p>
+    </div>
+  </div>
+
+  <table style="margin-top: 20px;">
+    <tr><th>特性</th><th>普通 TCP</th><th>STCP</th></tr>
+    <tr><td>公网端口暴露</td><td>✅ 暴露</td><td>❌ 不暴露</td></tr>
+    <tr><td>访问控制</td><td>仅密码/密钥</td><td>共享密钥 + 密码/密钥</td></tr>
+    <tr><td>暴力破解风险</td><td>⚠️ 高</td><td>✅ 无</td></tr>
+    <tr><td>额外负载</td><td>高（大量无效连接）</td><td>✅ 无</td></tr>
+    <tr><td>配置复杂度</td><td>简单</td><td>中等</td></tr>
+  </table>
+  <div class="slide-number">3 / 9</div>
+</div>
+
+<!-- ==================== SLIDE 4: How STCP Works ==================== -->
+<div class="slide">
+  <h2>⚙️ STCP 工作原理</h2>
+
+  <p style="margin-bottom: 20px;">STCP 涉及三个角色：<strong>服务端 xfrpc</strong>、<strong>frps 服务器</strong>、<strong>访客端 xfrpc</strong></p>
+
+  <div class="flow">
+    <div class="flow-node">� 用户<br><small>127.0.0.1:6000</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">💻 AW (访客端)<br><small>xfrpc stcp_visitor</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">☁️ openclaw (中转)<br><small>frps :7070</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">📡 Nokia (服务端)<br><small>xfrpc stcp · SSH :22</small></div>
+  </div>
+
+  <div class="cols cols-2" style="margin-top: 20px;">
+    <div class="card">
+      <h3>服务端 xfrpc 配置（Nokia）</h3>
+      <pre><code># /etc/config/xfrpc
+config xfrpc 'common'
+    option server_addr '43.159.38.154'
+    option server_port '7070'
+    option token '...'
+    option tls_enable '1'
+    option tls_cert_file '/etc/xfrpc-client.crt'
+    option tls_key_file '/etc/xfrpc-client.key'
+    option tls_trusted_ca_file '/etc/xfrpc-ca.crt'
+
+config stcp 'nokia_ssh'
+    option local_ip '127.0.0.1'
+    option local_port '22'
+    option secret_key 'stcp_nokia_ssh_2026'</code></pre>
+      <p style="margin-top: 8px; color: var(--muted);">Nokia 通过 OpenWrt UCI 注册 STCP 代理，指定密钥（<code>secret_key</code>）。</p>
+    </div>
+    <div class="card">
+      <h3>访客端 xfrpc 配置（AW）</h3>
+      <pre><code># /etc/config/xfrpc
+config xfrpc 'common'
+    option server_addr '43.159.38.154'
+    option server_port '7070'
+    option token '...'
+    option tls_enable '1'
+    option tls_cert_file '/etc/xfrpc-client.crt'
+    option tls_key_file '/etc/xfrpc-client.key'
+    option tls_trusted_ca_file '/etc/xfrpc-ca.crt'
+
+config stcp_visitor 'nokia_ssh_visitor'
+    option server_name 'nokia_ssh'
+    option bind_addr '127.0.0.1'
+    option bind_port '6000'
+    option secret_key 'stcp_nokia_ssh_2026'</code></pre>
+      <p style="margin-top: 8px; color: var(--muted);">AW 通过 OpenWrt UCI 注册 STCP 访客，指定密钥和本地监听端口。</p>
+    </div>
+  </div>
+
+  <div class="warning" style="margin-top: 16px;">
+    <p><strong>⚠️ 常见配置错误：</strong></p>
+    <ul>
+      <li>UCI 中密钥字段为 <code>secret_key</code>，init 脚本会自动转换为 INI 的 <code>sk</code> 字段</li>
+      <li>缺少 TLS 证书配置 → 连接被 frps 拒绝（<code>transport.tls.force = true</code>）</li>
+      <li>忘记设置 <code>loglevel</code> 选项 → xfrpc 因 <code>-d</code> 参数为空而崩溃</li>
+    </ul>
+  </div>
+
+  <div class="highlight" style="margin-top: 16px;">
+    <p><strong>关键流程：</strong>当远程用户连接访客端的 6000 端口时，访客端 xfrpc 通过 frps 向服务端发起连接请求（携带密钥），frps 验证密钥匹配后建立数据通道，实现端到端通信。</p>
+  </div>
+  <div class="slide-number">4 / 9</div>
+</div>
+
+<!-- ==================== SLIDE 5: Security Advantage ==================== -->
+<div class="slide">
+  <h2>🛡️ STCP 如何解决安全问题</h2>
+
+  <div class="cols cols-2">
+    <div class="card">
+      <h3>❌ 普通 TCP 代理场景</h3>
+      <pre><code># frps 监听公网端口 6000
+# 任何人都可以尝试连接
+$ nmap -p 6000 公网IP
+PORT     STATE SERVICE
+6000/tcp open  X11
+
+# 攻击者可以暴力破解
+$ hydra -l root -P wordlist.txt ssh://公网IP:6000</code></pre>
+      <p style="color: var(--red); margin-top: 8px;">❌ 端口对所有人可见，攻击面大</p>
+    </div>
+    <div class="card">
+      <h3>✅ STCP 代理场景</h3>
+      <pre><code># frps 不在公网暴露 SSH 端口
+# 攻击者扫描不到任何开放端口
+$ nmap -p 6000 公网IP
+PORT     STATE SERVICE
+6000/tcp closed X11
+
+# 即使知道端口，没有密钥也无法连接
+# frps 内部验证密钥后才建立通道</code></pre>
+      <p style="color: var(--green); margin-top: 8px;">✅ 无公网端口暴露，零攻击面</p>
+    </div>
+  </div>
+
+  <div class="success" style="margin-top: 20px;">
+    <h3>双重安全保障</h3>
+    <ul>
+      <li><strong>第一层（STCP 密钥）：</strong>frps 在转发连接前验证密钥，密钥不匹配则直接拒绝</li>
+      <li><strong>第二层（SSH 认证）：</strong>即使密钥验证通过，用户仍需通过 SSH 密钥/密码认证</li>
+      <li><strong>零暴露面：</strong>内网服务端口不在公网监听，扫描工具无法发现</li>
+    </ul>
+  </div>
+  <div class="slide-number">5 / 9</div>
+</div>
+
+<!-- ==================== SLIDE 6: Test Topology ==================== -->
+<div class="slide">
+  <h2>🏗️ 测试环境拓扑</h2>
+
+  <div class="flow" style="margin-top: 30px; margin-bottom: 30px;">
+    <div class="flow-node" style="border-color: var(--purple);">
+      <strong>💻 AW</strong><br>
+      <small>OpenWrt · 192.168.8.1</small><br>
+      <small style="color: var(--yellow);">STCP 访客端 · :6000</small>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node" style="border-color: var(--accent);">
+      <strong>☁️ openclaw (中转)</strong><br>
+      <small>VPS · 43.159.38.154</small><br>
+      <small style="color: var(--green);">frps :7070</small>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node" style="border-color: var(--green);">
+      <strong>📡 Nokia</strong><br>
+      <small>OpenWrt · 192.168.9.1</small><br>
+      <small style="color: var(--yellow);">STCP 服务端 · SSH :22</small>
+    </div>
+  </div>
+
+  <div class="cols cols-3" style="margin-top: 10px;">
+    <div class="card" style="border-color: var(--purple);">
+      <h3 style="color: var(--purple);">💻 STCP 访客端 (AW)</h3>
+      <p>订阅代理 <code>nokia_ssh</code></p>
+      <p>本地监听 :6000</p>
+      <p>密钥: <code>stcp_nokia_ssh_2026</code></p>
+    </div>
+    <div class="card" style="border-color: var(--accent);">
+      <h3 style="color: var(--accent);">☁️ frps 中转 (openclaw)</h3>
+      <p>接收并转发 STCP 连接</p>
+      <p><code>nwct-server</code> 监听 :7070</p>
+      <p>强制 TLS + TCP MUX</p>
+    </div>
+    <div class="card" style="border-color: var(--green);">
+      <h3 style="color: var(--green);">📡 STCP 服务端 (Nokia)</h3>
+      <p>注册代理 <code>nokia_ssh</code></p>
+      <p>暴露本地 SSH :22</p>
+      <p>密钥: <code>stcp_nokia_ssh_2026</code></p>
+    </div>
+  </div>
+
+  <div class="highlight" style="margin-top: 20px;">
+    <p><strong>数据流向：</strong>AW 用户 → <code>ssh -p 6000 root@127.0.0.1</code> → xfrpc 访客端 → frps(openclaw) → xfrpc 服务端(nokia) → SSH(:22)</p>
+  </div>
+  <div class="slide-number">6 / 9</div>
+</div>
+
+<!-- ==================== SLIDE 7: Configuration ==================== -->
+<div class="slide">
+  <h2>📝 配置详解</h2>
+
+  <div class="cols cols-2">
+    <div class="card">
+      <h3>☁️ frps 服务器配置 (nwct-server.toml)</h3>
+      <pre><code># /etc/nwct/nwct-server.toml
+bindPort = 7070
+auth.method = "token"
+auth.token = "fc21625021dd5517c3de0d939bd1ede627ee53a1af4eaaa5"
+
+# TLS 强制模式（必须配置客户端证书）
+transport.tls.force = true
+transport.tls.certFile = "/etc/nwct/certs/server.crt"
+transport.tls.keyFile = "/etc/nwct/certs/server.key"
+transport.tls.trustedCaFile = "/etc/nwct/certs/ca.crt"
+
+# 可选：QUIC 支持
+# quicBindPort = 6001</code></pre>
+    </div>
+    <div class="card">
+      <h3>📡 服务端 xfrpc 配置（Nokia OpenWrt）</h3>
+      <pre><code># /etc/config/xfrpc
+config xfrpc 'common'
+    option enabled '1'
+    option server_addr '43.159.38.154'
+    option server_port '7070'
+    option token 'fc21625021dd5517c3de0d939bd1ede627ee53a1af4eaaa5'
+    option tls_enable '1'
+    option tls_cert_file '/etc/xfrpc-client.crt'
+    option tls_key_file '/etc/xfrpc-client.key'
+    option tls_trusted_ca_file '/etc/xfrpc-ca.crt'
+
+config stcp 'nokia_ssh'
+    option enabled '1'
+    option local_ip '127.0.0.1'
+    option local_port '22'
+    option secret_key 'stcp_nokia_ssh_2026'</code></pre>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top: 20px;">
+    <h3>💻 访客端 xfrpc 配置（AW OpenWrt）</h3>
+    <pre><code># /etc/config/xfrpc
+config xfrpc 'common'
+    option enabled '1'
+    option server_addr '43.159.38.154'
+    option server_port '7070'
+    option token 'fc21625021dd5517c3de0d939bd1ede627ee53a1af4eaaa5'
+    option tls_enable '1'
+    option tls_cert_file '/etc/xfrpc-client.crt'
+    option tls_key_file '/etc/xfrpc-client.key'
+    option tls_trusted_ca_file '/etc/xfrpc-ca.crt'
+    option loglevel '7'
+
+config stcp_visitor 'nokia_ssh_visitor'
+    option enabled '1'
+    option server_name 'nokia_ssh'
+    option bind_addr '192.168.8.1'
+    option bind_port '6000'
+    option secret_key 'stcp_nokia_ssh_2026'</code></pre>
+  </div>
+
+  <div class="highlight" style="margin-top: 16px;">
+    <p><strong>关键配置说明：</strong></p>
+    <ul>
+      <li><span class="inline-code">server_name</span> 必须与服务端代理的 section 名称一致（如 <code>nokia_ssh</code>）</li>
+      <li><span class="inline-code">secret_key</span> 两端必须完全相同，init 脚本会自动映射为 xfrpc 的 <code>sk</code> 字段</li>
+      <li>TLS 证书由 frps 的 CA 签发，客户端需安装 CA 证书 + 客户端证书/密钥</li>
+    </ul>
+  </div>
+  <div class="slide-number">7 / 9</div>
+</div>
+
+<!-- ==================== SLIDE 8: Certificate Generation ==================== -->
+<div class="slide">
+  <h2>📜 TLS 证书生成流程</h2>
+
+  <p style="margin-bottom: 20px;">frps 启用了 <code>transport.tls.force = true</code>，需要为服务器和客户端分别生成证书，均由同一个 CA 签发。</p>
+
+  <div class="card">
+    <h3>Step 1: 生成 CA 根证书</h3>
+    <pre><code># 生成 CA 私钥
+openssl genrsa -out ca.key 2048
+
+# 生成 CA 自签名证书（有效期 10 年）
+openssl req -new -x509 -days 3650 -key ca.key -out ca.crt \
+  -subj "/CN=xfrpc-ca"</code></pre>
+  </div>
+
+  <div class="card" style="margin-top: 16px;">
+    <h3>Step 2: 生成 frps 服务器证书</h3>
+    <pre><code># 生成服务器私钥
+openssl genrsa -out server.key 2048
+
+# 生成证书签名请求（CN 填服务器 IP 或域名）
+openssl req -new -key server.key -out server.csr \
+  -subj "/CN=43.159.38.154"
+
+# 用 CA 签发服务器证书（有效期 10 年）
+openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key \
+  -CAcreateserial -out server.crt -days 3650</code></pre>
+  </div>
+
+  <div class="card" style="margin-top: 16px;">
+    <h3>Step 3: 生成客户端证书</h3>
+    <pre><code># 生成客户端私钥
+openssl genrsa -out client.key 2048
+
+# 生成证书签名请求
+openssl req -new -key client.key -out client.csr \
+  -subj "/CN=xfrpc-client"
+
+# 用 CA 签发客户端证书（有效期 10 年）
+openssl x509 -req -in client.csr -CA ca.crt -CAkey ca.key \
+  -CAcreateserial -out client.crt -days 3650</code></pre>
+  </div>
+
+  <div class="card" style="margin-top: 16px;">
+    <h3>生成示例（一键脚本）</h3>
+    <pre><code>#!/bin/bash
+# 一键生成 CA、服务器、客户端证书
+set -e
+
+# CA 根证书
+openssl genrsa -out ca.key 2048
+openssl req -new -x509 -days 3650 -key ca.key -out ca.crt -subj "/CN=xfrpc-ca"
+
+# 服务器证书（CN 填 frps 服务器 IP 或域名）
+openssl genrsa -out server.key 2048
+openssl req -new -key server.key -out server.csr -subj "/CN=43.159.38.154"
+openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt -days 3650
+
+# 客户端证书（所有 xfrpc 客户端共用）
+openssl genrsa -out client.key 2048
+openssl req -new -key client.key -out client.csr -subj "/CN=xfrpc-client"
+openssl x509 -req -in client.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out client.crt -days 3650
+
+# 清理 CSR 和序列文件
+rm -f *.csr *.srl
+echo "Done: ca.crt, server.crt, client.crt"</code></pre>
+  </div>
+
+  <div class="warning" style="margin-top: 16px;">
+    <p><strong>⚠️ 注意事项：</strong></p>
+    <ul>
+      <li>CA 私钥（<code>ca.key</code>）必须妥善保管，泄露后可伪造任意客户端证书</li>
+      <li>客户端证书必须由同一个 CA 签发，否则 frps 的 <code>trustedCaFile</code> 验证会失败</li>
+      <li>私钥文件权限应设为 <code>600</code>，仅 owner 可读写</li>
+    </ul>
+  </div>
+  <div class="slide-number">8 / 9</div>
+</div>
+
+<!-- ==================== SLIDE 9: Quick Start ==================== -->
+<div class="slide">
+  <h2>🚀 快速验证步骤</h2>
+
+  <div class="cols cols-3">
+    <div class="card">
+      <h3>Step 1: 确认 frps 运行</h3>
+      <pre><code># openclaw VPS
+sudo systemctl status nwct-server
+sudo ss -tlnp | grep 7070</code></pre>
+      <p style="color: var(--muted); margin-top: 8px;">nwct-server (frps) 已通过 systemd 管理</p>
+    </div>
+    <div class="card">
+      <h3>Step 2: 确认 Nokia 服务端运行</h3>
+      <pre><code># Nokia (通过 openclaw 中转)
+ssh nokia "/etc/init.d/xfrpc status"
+# 确认 STCP 代理已注册
+ssh nokia "logread -e xfrpc | grep nokia_ssh"</code></pre>
+      <p style="color: var(--muted); margin-top: 8px;">xfrpc 服务端需先注册 STCP 代理</p>
+    </div>
+    <div class="card">
+      <h3>Step 3: 确认 AW 访客端运行</h3>
+      <pre><code># AW 设备
+ssh aw "/etc/init.d/xfrpc status"
+ssh aw "netstat -tlnp | grep 6000"</code></pre>
+      <p style="color: var(--muted); margin-top: 8px;">确认 6000 端口已监听</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top: 20px;">
+    <h3>Step 4: 测试 STCP 隧道</h3>
+    <pre><code># 在 AW 上通过 STCP 隧道 SSH 连接到 Nokia
+ssh -p 6000 root@127.0.0.1
+
+# 验证连接成功 - 实际连接的是 Nokia（服务端）
+root@chawrt:~# uptime
+ 21:09:06 up 13 days, load average: 0.00, 0.01, 0.00
+
+# 验证安全性 - frps 公网端口无 STCP 端口暴露
+nmap -p 6000 43.159.38.154
+# 结果: 6000/tcp closed  ← 端口未暴露！</code></pre>
+  </div>
+
+  <div class="success" style="margin-top: 16px;">
+    <p>✅ <strong>验证成功标志：</strong>SSH 连接正常建立（实际连到 Nokia），且 frps 公网上无对应端口暴露。流量通过 TLS 加密隧道传输。</p>
+  </div>
+
+  <div class="highlight" style="margin-top: 16px;">
+    <p><strong>调试技巧：</strong></p>
+    <ul>
+      <li>使用 <code>-d 7</code> 参数开启 xfrpc 调试日志</li>
+      <li>OpenWrt 上使用 <code>logread -e xfrpc</code> 查看日志</li>
+      <li>检查 frps 日志：<code>sudo journalctl -u nwct-server -f</code></li>
+      <li>Nokia 需通过 openclaw 中转访问：<code>ssh -J openclaw root@192.168.9.1</code></li>
+    </ul>
+  </div>
+  <div class="slide-number">9 / 9</div>
+</div>
+
+</body>
+</html>

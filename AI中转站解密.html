@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI中转站惊天内幕 - 全屏动画版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap');
+        
+        body {
+            font-family: 'Noto Sans SC', system-ui, sans-serif;
+        }
+        
+        .slide {
+            transition: all 800ms cubic-bezier(0.23, 1, 0.32, 1);
+            opacity: 0;
+            transform: translateY(60px);
+        }
+        
+        .slide.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .tech-bg {
+            background: radial-gradient(circle at 50% 30%, rgba(34, 211, 238, 0.18) 0%, transparent 60%),
+                        linear-gradient(135deg, #0f172a 0%, #1e2937 100%);
+        }
+        
+        .highlight {
+            background: linear-gradient(90deg, #22d3ee, #c026d3, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shine 3s linear infinite;
+        }
+        
+        @keyframes shine {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .card {
+            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        
+        .card:hover {
+            transform: translateY(-15px) scale(1.04);
+            box-shadow: 0 30px 60px -15px rgb(34 211 238 / 0.3);
+        }
+        
+        .scanline {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: linear-gradient(to bottom, transparent 40%, rgba(255,255,255,0.06) 50%, transparent 60%);
+            animation: scan 8s linear infinite;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0.6;
+        }
+        
+        @keyframes scan {
+            0% { transform: translateY(-150%); }
+            100% { transform: translateY(500%); }
+        }
+        
+        .glow {
+            text-shadow: 0 0 40px rgb(34 211 238);
+        }
+    </style>
+</head>
+<body class="bg-zinc-950 text-white overflow-hidden">
+    
+    <!-- 主内容区 - 全屏 -->
+    <div class="h-screen relative" id="slides-container">
+        
+        <!-- Slide 1: 开场 -->
+        <div class="slide absolute inset-0 flex flex-col justify-center items-center tech-bg p-16 active" id="slide-1">
+            <div class="scanline"></div>
+            <div class="max-w-5xl text-center relative z-10">
+                <div class="inline-flex items-center gap-4 bg-red-500/10 border border-red-400/30 text-red-400 px-10 py-4 rounded-3xl mb-12 text-lg font-medium tracking-widest animate-pulse">
+                    <i class="fas fa-bolt"></i>
+                    爆款内幕解密
+                </div>
+                
+                <h1 class="text-7xl md:text-8xl font-black leading-none mb-8 glow">
+                    孙哥 + 傅盛<br>为何扎堆<br><span class="highlight">中转站</span>？
+                </h1>
+                
+                <p class="text-3xl text-zinc-300 mt-6">隐藏在“不赚钱”背后的真相</p>
+                
+                <div class="mt-32 flex justify-center gap-16 text-base uppercase tracking-widest text-zinc-400">
+                    <div class="flex items-center gap-3"><i class="fas fa-user-secret text-amber-400"></i> 大佬入场</div>
+                    <div class="flex items-center gap-3"><i class="fas fa-skull-crossbones text-red-400"></i> 灰产揭秘</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 2 -->
+        <div class="slide hidden absolute inset-0 tech-bg p-16" id="slide-2">
+            <div class="max-w-6xl mx-auto h-full flex flex-col justify-center">
+                <h2 class="text-6xl font-black mb-16 flex items-center gap-6">
+                    <span class="text-cyan-400">01</span> 什么是AI中转站？
+                </h2>
+                <div class="text-5xl leading-tight font-medium max-w-3xl">
+                    AI时代的 <span class="text-amber-400 font-black">"算力二道贩子"</span>
+                </div>
+                
+                <div class="mt-20 bg-black/50 border border-cyan-400/30 p-12 rounded-3xl max-w-3xl">
+                    <div class="flex items-center justify-between text-2xl">
+                        <div>用户</div>
+                        <div class="flex-1 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent mx-10"></div>
+                        <div class="text-emerald-400 font-bold">中转站</div>
+                        <div class="flex-1 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent mx-10"></div>
+                        <div>官方API</div>
+                    </div>
+                </div>
+                
+                <div class="mt-16 text-2xl text-zinc-400">90%中转站使用同一套开源代码</div>
+            </div>
+        </div>
+
+        <!-- Slide 3: 暴利模式 -->
+        <div class="slide hidden absolute inset-0 tech-bg p-16" id="slide-3">
+            <div class="max-w-6xl mx-auto">
+                <h2 class="text-6xl font-black mb-16">02 真正的暴利模式</h2>
+                <div class="grid grid-cols-2 gap-10">
+                    <div class="space-y-10">
+                        <div class="card bg-gradient-to-br from-amber-500/10 to-orange-600/10 border border-amber-400/30 p-12 rounded-3xl">
+                            <div class="text-amber-400 uppercase tracking-widest text-sm mb-3">最基础</div>
+                            <h3 class="text-5xl font-black">Token批发差价</h3>
+                            <div class="text-6xl font-bold mt-8">月入百万</div>
+                        </div>
+                        <div class="card bg-gradient-to-br from-purple-500/10 to-fuchsia-600/10 border border-purple-400/30 p-12 rounded-3xl">
+                            <div class="text-purple-400 uppercase tracking-widest text-sm mb-3">最暴利</div>
+                            <h3 class="text-5xl font-black">订阅制超售</h3>
+                            <div class="text-6xl font-bold mt-8 text-purple-300">300%+ 利润</div>
+                        </div>
+                    </div>
+                    <div class="space-y-10 pt-12">
+                        <div class="card bg-gradient-to-br from-red-500/10 to-rose-600/10 border border-red-400/30 p-12 rounded-3xl">
+                            <h3 class="text-5xl font-black text-red-300">黑卡零成本</h3>
+                            <p class="text-2xl mt-6 text-red-200">白嫖额度低价甩卖</p>
+                        </div>
+                        <div class="card bg-gradient-to-br from-sky-400/10 to-cyan-500/10 border border-cyan-400/30 p-12 rounded-3xl">
+                            <h3 class="text-5xl font-black">现金流沉淀</h3>
+                            <p class="text-2xl mt-6">用户余额 = 躺赚机器</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 4: 风险 -->
+        <div class="slide hidden absolute inset-0 tech-bg p-16" id="slide-4">
+            <div class="max-w-6xl mx-auto h-full flex items-center">
+                <div class="w-full">
+                    <h2 class="text-6xl font-black text-red-400 mb-16">03 你正在踩的雷</h2>
+                    <div class="grid grid-cols-3 gap-8">
+                        <div class="card bg-zinc-900/90 border-l-4 border-red-500 p-10 rounded-3xl h-full">
+                            <div class="text-7xl mb-8">📡</div>
+                            <h3 class="text-3xl font-bold">数据隐私被卖</h3>
+                            <p class="mt-6 text-zinc-400 leading-relaxed">所有Prompt、代码、商业机密都被完整记录</p>
+                        </div>
+                        <div class="card bg-zinc-900/90 border-l-4 border-red-500 p-10 rounded-3xl h-full">
+                            <div class="text-7xl mb-8">🎭</div>
+                            <h3 class="text-3xl font-bold">模型掺水</h3>
+                            <p class="mt-6 text-zinc-400 leading-relaxed">花4o的钱，实际返回低配模型</p>
+                        </div>
+                        <div class="card bg-zinc-900/90 border-l-4 border-red-500 p-10 rounded-3xl h-full">
+                            <div class="text-7xl mb-8">💣</div>
+                            <h3 class="text-3xl font-bold">随时跑路</h3>
+                            <p class="mt-6 text-zinc-400 leading-relaxed">余额清零 + 黑卡封号</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5 -->
+        <div class="slide hidden absolute inset-0 tech-bg p-16 flex items-center" id="slide-5">
+            <div class="max-w-5xl mx-auto text-center">
+                <h2 class="text-6xl font-black mb-20">大佬们为何盯上这个赛道？</h2>
+                <div class="flex justify-center gap-20">
+                    <div class="text-center">
+                        <div class="text-8xl mb-6">🚀</div>
+                        <h3 class="text-4xl font-bold">流量入口</h3>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-8xl mb-6">💰</div>
+                        <h3 class="text-4xl font-bold">现金流机器</h3>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-8xl mb-6">📊</div>
+                        <h3 class="text-4xl font-bold">数据资产</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6: 结尾 -->
+        <div class="slide hidden absolute inset-0 flex flex-col justify-center items-center tech-bg p-16" id="slide-6">
+            <div class="scanline"></div>
+            <div class="max-w-4xl text-center relative z-10">
+                <h1 class="text-7xl font-black leading-tight mb-12">理性使用AI<br>合规永远第一</h1>
+                
+                <div class="text-4xl text-emerald-400 mb-16">优先选择国内合规大模型</div>
+                
+                <div class="inline-block bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 border border-emerald-400/30 px-20 py-12 rounded-3xl text-3xl">
+                    省小钱 ≠ 赚大便宜
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部控制栏 -->
+    <div class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-zinc-900/95 border border-cyan-500/30 backdrop-blur-2xl px-10 py-5 rounded-3xl flex items-center gap-8 shadow-2xl z-50">
+        <button onclick="prevSlide()" class="w-14 h-14 flex items-center justify-center text-3xl hover:text-cyan-400 transition-all active:scale-90">
+            ←
+        </button>
+        
+        <div class="font-mono text-2xl text-cyan-300 tracking-widest px-6" id="slide-counter">01 / 06</div>
+        
+        <button onclick="nextSlide()" class="w-14 h-14 flex items-center justify-center text-3xl hover:text-cyan-400 transition-all active:scale-90">
+            →
+        </button>
+    </div>
+
+    <script>
+        let currentSlide = 1;
+        const totalSlides = 6;
+
+        function showSlide(n) {
+            document.querySelectorAll('.slide').forEach(slide => {
+                slide.classList.remove('active');
+                slide.classList.add('hidden');
+            });
+            
+            const target = document.getElementById(`slide-${n}`);
+            if (target) {
+                target.classList.remove('hidden');
+                setTimeout(() => target.classList.add('active'), 50);
+            }
+            
+            currentSlide = n;
+            document.getElementById('slide-counter').textContent = 
+                `${currentSlide.toString().padStart(2, '0')} / ${totalSlides.toString().padStart(2, '0')}`;
+        }
+
+        function nextSlide() {
+            let next = currentSlide + 1;
+            if (next > totalSlides) next = 1;
+            showSlide(next);
+        }
+
+        function prevSlide() {
+            let prev = currentSlide - 1;
+            if (prev < 1) prev = totalSlides;
+            showSlide(prev);
+        }
+
+        // 键盘控制
+        document.addEventListener('keydown', e => {
+            if (e.key === "ArrowRight" || e.key === " ") {
+                e.preventDefault();
+                nextSlide();
+            } else if (e.key === "ArrowLeft") {
+                e.preventDefault();
+                prevSlide();
+            }
+        });
+
+        // 初始化
+        window.onload = () => {
+            showSlide(1);
+        };
+    </script>
+</body>
+</html>

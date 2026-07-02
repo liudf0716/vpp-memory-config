@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>AI算力过剩风暴 - 视频演示文稿</title>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 0;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'PingFang SC', 'Microsoft YaHei', -apple-system, sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            -webkit-print-color-adjust: exact;
+        }
+        .slide {
+            width: 297mm;
+            height: 210mm;
+            padding: 25mm 25mm;
+            position: relative;
+            page-break-after: always;
+            display: block;
+            background: #0f172a;
+            overflow: hidden;
+        }
+        /* Title Slide Custom Background */
+        .slide.title-slide {
+            background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
+            display: table;
+            width: 297mm;
+        }
+        .title-body {
+            display: table-cell;
+            vertical-align: middle;
+            padding: 0 25mm;
+        }
+        .title-slide h1 {
+            font-size: 38pt;
+            margin: 0 0 15px 0;
+            line-height: 1.25;
+            color: #ffffff;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+        .title-slide h1 span {
+            color: #38bdf8;
+        }
+        .title-slide h2 {
+            font-size: 18pt;
+            color: #94a3b8;
+            margin: 0 0 40px 0;
+            font-weight: 400;
+        }
+        .title-footer {
+            font-size: 11pt;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        /* Standard Slide Layout */
+        .slide-header {
+            margin-bottom: 25mm;
+            position: relative;
+        }
+        .slide-header h2 {
+            font-size: 24pt;
+            margin: 0;
+            color: #ffffff;
+            font-weight: 700;
+            display: inline-block;
+        }
+        .slide-header .accent-bar {
+            width: 40px;
+            height: 4px;
+            background-color: #38bdf8;
+            margin-top: 12px;
+        }
+        .slide-header .slide-number {
+            position: absolute;
+            right: 0;
+            top: 0;
+            font-size: 12pt;
+            color: #475569;
+            font-weight: 600;
+        }
+        
+        .slide-content {
+            font-size: 14pt;
+            line-height: 1.7;
+            color: #cbd5e1;
+        }
+        
+        /* Typography Elements */
+        p {
+            margin: 0 0 15px 0;
+        }
+        strong {
+            color: #38bdf8;
+            font-weight: 600;
+        }
+        .highlight-amber {
+            color: #fbbf24;
+            font-weight: 600;
+        }
+        
+        /* Layout Helpers */
+        .grid-2 {
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+        }
+        .col {
+            display: table-cell;
+            vertical-align: top;
+            padding-right: 20px;
+        }
+        .col:last-child {
+            padding-right: 0;
+            padding-left: 20px;
+        }
+        
+        /* Cards / Blocks */
+        .card {
+            background-color: #1e293b;
+            border-left: 4px solid #38bdf8;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 0 8px 8px 0;
+        }
+        .card.amber {
+            border-left-color: #fbbf24;
+            background-color: #1e293b;
+        }
+        .card h3 {
+            margin: 0 0 10px 0;
+            font-size: 16pt;
+            color: #ffffff;
+        }
+        
+        /* Lists */
+        ul {
+            margin: 0 0 20px 0;
+            padding-left: 25px;
+        }
+        li {
+            margin-bottom: 12px;
+        }
+        li:last-child {
+            margin-bottom: 0;
+        }
+        
+        /* Table Styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 12pt;
+        }
+        th, td {
+            padding: 14px 18px;
+            text-align: left;
+            border-bottom: 1px solid #334155;
+        }
+        th {
+            background-color: #1e293b;
+            color: #ffffff;
+            font-weight: 600;
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        
+        /* Footer Accent */
+        .slide-footer {
+            position: absolute;
+            bottom: 15mm;
+            left: 25mm;
+            right: 25mm;
+            font-size: 10pt;
+            color: #475569;
+            border-top: 1px solid #1e293b;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- SLIDE 1: Title -->
+    <div class="slide title-slide">
+        <div class="title-body">
+            <h1>AI疯狂买卡潮终结？<br>从Meta<span>出租算力</span>看大模型估值大重置</h1>
+            <h2>行业拐点分析与资本市场大分化</h2>
+            <div class="title-footer">Insight Report &copy; 2026</div>
+        </div>
+    </div>
+
+    <!-- SLIDE 2 -->
+    <div class="slide">
+        <div class="slide-header">
+            <h2>一、引爆市场的“黑天鹅”事件</h2>
+            <div class="accent-bar"></div>
+            <div class="slide-number">01 / 05</div>
+        </div>
+        <div class="slide-content">
+            <div class="card">
+                <h3>Meta Compute 秘密推进中</h3>
+                <p>近期彭博社爆料：Meta 计划将内部<strong>富余的 AI 算力（闲置率预估高达 35%）</strong>低价出租给外部企业，直接化身算力包工头。</p>
+            </div>
+            <div class="grid-2" style="margin-top: 30px;">
+                <div class="col">
+                    <p><strong style="color: #4ade80;">👍 Meta 股价暴涨近 10%</strong></p>
+                    <p style="font-size: 12pt; color: #94a3b8;">华尔街视其为极其聪明的“财务安全气囊”，1400亿资本开支有了兜底的变现渠道。</p>
+                </div>
+                <div class="col">
+                    <p><strong style="color: #f87171;">👎 算力云与硬件股集体暴跌</strong></p>
+                    <p style="font-size: 12pt; color: #94a3b8;">CoreWeave、Nebius 等新兴算力云暴跌 10%-15%；芯片与光模块供应链全线承压。</p>
+                </div>
+            </div>
+        </div>
+        <div class="slide-footer">大厂“反噬”第三方算力云，行业供需结构发生根本性逆转</div>
+    </div>
+
+    <!-- SLIDE 3 -->
+    <div class="slide">
+        <div class="slide-header">
+            <h2>二、恐慌根源：供给侧的“大水漫灌”</h2>
+            <div class="accent-bar"></div>
+            <div class="slide-number">02 / 05</div>
+        </div>
+        <div class="slide-content">
+            <p>这次暴跌的核心逻辑是<strong>“供给侧恐慌”</strong>与<strong>“大客户反噬”</strong>：</p>
+            <ul>
+                <li><strong>砸了第三方的饭碗：</strong> 过去两年 Neocloud 靠大厂拿不到卡的“时间差”暴利崛起，而 Meta 本身就是他们的大客户。现在大客户不仅不租了，还要低价下场竞争。</li>
+                <li><strong>戳破了“无限买卡”的幻觉：</strong> Meta 出现结构性闲置（内部实际利用率约 65%），向市场释放了明确信号——大厂盲目扫货、无脑买卡的疯狂时代已经进入尾声。</li>
+                <li><strong>硬件供应链重估：</strong> 华尔街开始担忧算力基建投资（Capex）提早见顶，供应链的定价逻辑从“科技无限成长”回归到“周期性行业”。</li>
+            </ul>
+        </div>
+        <div class="slide-footer">市场担忧：大厂的烧钱速度，已经远远超过了大模型的Token消耗速度</div>
+    </div>
+
+    <!-- SLIDE 4 -->
+    <div class="slide">
+        <div class="slide-header">
+            <h2>三、AI 狂热正走向冷酷的 ROI 现实</h2>
+            <div class="accent-bar"></div>
+            <div class="slide-number">03 / 05</div>
+        </div>
+        <div class="slide-content">
+            <p>市场对 AI 的态度正在发生根本性转变：从<strong>“无脑讲故事”</strong>跨入<strong>“冷酷的财务检查”</strong>。</p>
+            <div class="grid-2" style="margin-top: 20px;">
+                <div class="col">
+                    <div class="card amber">
+                        <h3>过去（狂热期）</h3>
+                        <p style="font-size: 12pt;"><strong>核心指标：</strong> GPU 采购量、模型参数量。<br>只要宣布买卡、建数据中心，资本市场就给高估值。</p>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card">
+                        <h3>现在（理性期）</h3>
+                        <p style="font-size: 12pt;"><strong>核心指标：</strong> 自由现金流、每块卡创造的净利润。<br>盲目烧钱举债、无法闭环的企业开始遭到资本惩罚。</p>
+                    </div>
+                </div>
+            </div>
+            <p style="margin-top: 15px; font-size: 13pt;"><strong>高盛与国际清算银行警告：</strong> 万亿美金的资本开支，目前除了编程工具和AI助理外，尚未带来颠覆性的企业级利润增长。</p>
+        </div>
+        <div class="slide-footer">修铁路的没赚到钱，躺在铁路上讲故事的泡沫正在被率先挤出</div>
+    </div>
+
+    <!-- SLIDE 5 -->
+    <div class="slide">
+        <div class="slide-header">
+            <h2>四、市场正在如何“奖励保守”？</h2>
+            <div class="accent-bar"></div>
+            <div class="slide-number">04 / 05</div>
+        </div>
+        <div class="slide-content">
+            <p>市场不再单纯支持“狂热”，而是开始给<strong>有财务纪律、兼顾自由现金流</strong>的公司发放溢价：</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 25%">公司策略类型</th>
+                        <th style="width: 50%">代表特征</th>
+                        <th style="width: 25%">华尔街当下态度</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>激进举债型</strong></td>
+                        <td>不顾现金流，疯狂借贷、超前建设数据中心</td>
+                        <td style="color: #f87171; font-weight: bold;">严厉惩罚 (估值下调)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>有进有退型</strong></td>
+                        <td>砸钱买卡，但通过算力租赁、精细化运营控成本 (如 Meta)</td>
+                        <td style="color: #4ade80; font-weight: bold;">大力奖励 (估值稳固)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>务实应用型</strong></td>
+                        <td>不卷大模型，直接接入 API 搞垂直应用、降本增效</td>
+                        <td style="color: #4ade80; font-weight: bold;">青睐 (享受真红利)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="slide-footer">历史证明：技术革命中，往往是后面跑业务的务实应用商赚到最后的利润</div>
+    </div>
+
+    <!-- SLIDE 6 -->
+    <div class="slide">
+        <div class="slide-header">
+            <h2>五、估值重置下的行业未来图景</h2>
+            <div class="accent-bar"></div>
+            <div class="slide-number">05 / 05</div>
+        </div>
+        <div class="slide-content">
+            <div class="card" style="margin-bottom: 25px;">
+                <h3>这是一场“健康的阵痛”，而非 AI 的终结</h3>
+                <p>原来因为行业狂热而被极度高估的“泡沫股”会逐步回落到正常水平，产业正在完成向 2.0 时代的惊险一跃。</p>
+            </div>
+            <p><strong>未来的三大核心趋势：</strong></p>
+            <ul>
+                <li><strong>1. 算力进入精细化微调时代：</strong> 告别粗放式消耗，如何提高 GPU 内部利用率（如分布式调度、全栈协议优化）将成为硬核技术核心。</li>
+                <li><strong>2. 巨头生态锁死：</strong> Meta 出租算力，本质上是用超低基建成本把开源生态（Llama等）牢牢捆绑在自己的硬件之上。</li>
+                <li><strong>3. 垂直应用大爆发：</strong> 随着算力供给过剩带来 API 价格的大幅雪崩，真正能解决实际痛点、产生真金白游营收的 AI Agent 和智能硬件将迎来红利期。</li>
+            </ul>
+        </div>
+        <div class="slide-footer">PPT 完结 &middot; 感谢观看</div>
+    </div>
+
+</body>
+</html>
